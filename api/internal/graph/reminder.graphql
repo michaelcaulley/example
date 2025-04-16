@@ -1,0 +1,15 @@
+enum RemindableStatus {
+    CAN_REMIND
+    TOO_SOON
+}
+
+type PerfRemindableStatus {
+    status: RemindableStatus!
+    message: String!
+}
+
+interface Remindable implements Node {
+    id: ID!
+    reminders: [Reminder!]
+    remindableStatus: PerfRemindableStatus
+}

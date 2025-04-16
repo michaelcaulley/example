@@ -1,0 +1,17 @@
+FROM golang:1.24-alpine
+
+# Install dependencies
+RUN apk add --no-cache \
+    curl
+
+# Set up working directory
+WORKDIR /workspace
+
+# Install Atlas CLI
+RUN curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.32.0 sh
+
+# Verify installations
+RUN atlas version
+
+# Default command
+ENTRYPOINT ["atlas"]

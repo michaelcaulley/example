@@ -1,0 +1,96 @@
+name: example
+services:
+
+  go-runner:
+    image: golang:1.24-alpine
+    working_dir: /app
+    volumes:
+      - ./api:/app
+      - go_cache:/go
+    profiles:
+      - temprunner
+
+  atlas-db:
+    image: postgres:15-alpine
+    platform: linux/arm64/v8
+    profiles:
+      - "atlas"
+    networks:
+      - example
+    ports:
+      - "5430:5432"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+
+  atlas:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.atlas
+    profiles:
+      - "atlas"
+    networks:
+      - example
+    volumes:
+      - ./db/migrations:/workspace/migrations
+      - ./api:/workspace
+    depends_on:
+      atlas-db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    platform: linux/arm64/v8
+    networks:
+      - example
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      ENVIRONMENT: local
+      POSTGRES_USER: example_user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - database:/var/lib/postgresql/data/
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: example-api:local-dev
+    networks:
+      - example
+    depends_on:
+      - db
+    environment:
+      TZ: UTC
+      ENVIRONMENT: local
+      DATABASE_URL: "postgres://example_user:password@db:5432/example?sslmode=disable"
+    ports:
+      - "8080:80" # make port 80 of the service available at 8080 on the host machine
+    volumes:
+      - ./api:/app  # bind/mount the api codebase dir to /app dir for live reload
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "localhost:80/__lbheartbeat__" ]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+      timeout: 5s
+    restart: always
+
+volumes:
+  database: # persist db data between runs
+  go_cache: # persist go modules between runs
+networks:
+  example:

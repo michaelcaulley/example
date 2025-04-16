@@ -48,10 +48,6 @@ func (TimeMixin) Hooks() []ent.Hook {
 		// creation that the `created_at` and `updated_at` fields are set to the same value.
 		func(next ent.Mutator) ent.Mutator {
 			return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-				if skip, _ := ctx.Value(timeKey{}).(bool); skip {
-					return next.Mutate(ctx, m)
-				}
-
 				now := time.Now().Truncate(time.Microsecond) // match postgres timestamp precision
 				if m.Op().Is(ent.OpUpdate) || m.Op().Is(ent.OpUpdateOne) {
 					err := m.SetField("updated_at", now)
@@ -72,11 +68,4 @@ func (TimeMixin) Hooks() []ent.Hook {
 			})
 		},
 	}
-}
-
-type timeKey struct{}
-
-// SkipTime returns a new context that skips the time hook.
-func SkipTime(parent context.Context) context.Context {
-	return context.WithValue(parent, timeKey{}, true)
 }

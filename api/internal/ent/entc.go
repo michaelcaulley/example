@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/entc"
+	"entgo.io/ent/entc/gen"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 			"sql/modifier",
 		),
 	}
-	if err := entc.Generate("./internal/ent/schema", opts...); err != nil {
+	if err := entc.Generate("./internal/ent/schema", &gen.Config{}, opts...); err != nil {
 		log.Fatalf("running ent codegen: %v", err)
 	}
 }

@@ -16,7 +16,7 @@ resolver:
 # ent package. If they match it will use them, otherwise it will new ones.
 autobind:
   - github.com/99designs/gqlgen/graphql/introspection
-  - exinternal/internal/ent
+  - example/internal/ent
 
 model:
   filename: internal/graph/model/models_gen.go
@@ -30,9 +30,6 @@ models:
   Node:
     model:
       - ent.Noder
-  PerfCommentable:
+  Remindable:
     model:
-      - exinternal/internal/graph/interfaces.PERFCommentable
-  PerfRemindable:
-    model:
-      - exinternal/internal/graph/interfaces.PERFRemindable
+      - example/internal/graph/model.Remindable
