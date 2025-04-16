@@ -1,0 +1,38 @@
+schema:
+  - internal/graph/*.graphql
+
+# Where should the generated server code go?
+exec:
+  filename: internal/graph/generated.go
+  package: graph
+
+resolver:
+  layout: follow-schema   # Tell gqlgen to generate resolvers next to the schema file.
+  dir: internal/graph
+  package: graph
+  preserve_resolver: false
+
+# gqlgen will search for any type names in the schema in the generated
+# ent package. If they match it will use them, otherwise it will new ones.
+autobind:
+  - github.com/99designs/gqlgen/graphql/introspection
+  - exinternal/internal/ent
+
+model:
+  filename: internal/graph/model/models_gen.go
+  package: model
+
+models:
+  ID:
+    model:
+      # Defines the ID field as Go 'int'.
+      - github.com/99designs/gqlgen/graphql.IntID
+  Node:
+    model:
+      - ent.Noder
+  PerfCommentable:
+    model:
+      - exinternal/internal/graph/interfaces.PERFCommentable
+  PerfRemindable:
+    model:
+      - exinternal/internal/graph/interfaces.PERFRemindable
