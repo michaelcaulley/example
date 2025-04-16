@@ -1,0 +1,4 @@
+extend type Mutation {
+    createTodo(input: CreateTodoInput!): Todo!
+    deleteTodo(id: ID!): ID!
+}

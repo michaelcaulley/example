@@ -1,0 +1,32 @@
+# === Go build artifacts ===
+*.exe
+*.test
+*.out
+*.a
+*.o
+*.so
+
+# Binaries and build output
+bin/
+pkg/
+coverage.out
+
+# Vendor directory (if not using `go mod vendor`)
+vendor/
+
+# === IDE / Editor configs ===
+
+# IntelliJ / GoLand
+.idea/
+*.iml
+.goland.*
+
+# VSCode (if some devs use it)
+.vscode/
+
+# === OS / Misc ===
+*.log
+tmp/
+*.swp
+.DS_Store
+Thumbs.db
