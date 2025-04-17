@@ -16,8 +16,6 @@ type Tx struct {
 	config
 	// Moderator is the client for interacting with the Moderator builders.
 	Moderator *ModeratorClient
-	// PeoplePartner is the client for interacting with the PeoplePartner builders.
-	PeoplePartner *PeoplePartnerClient
 	// Reminder is the client for interacting with the Reminder builders.
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
@@ -158,7 +156,6 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Moderator = NewModeratorClient(tx.config)
-	tx.PeoplePartner = NewPeoplePartnerClient(tx.config)
 	tx.Reminder = NewReminderClient(tx.config)
 	tx.Todo = NewTodoClient(tx.config)
 	tx.TodoReminder = NewTodoReminderClient(tx.config)

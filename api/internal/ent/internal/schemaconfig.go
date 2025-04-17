@@ -7,12 +7,11 @@ import "context"
 // SchemaConfig represents alternative schema names for all tables
 // that can be passed at runtime.
 type SchemaConfig struct {
-	Moderator     string // Moderator table.
-	PeoplePartner string // PeoplePartner table.
-	Reminder      string // Reminder table.
-	Todo          string // Todo table.
-	TodoReminder  string // TodoReminder table.
-	User          string // User table.
+	Moderator    string // Moderator table.
+	Reminder     string // Reminder table.
+	Todo         string // Todo table.
+	TodoReminder string // TodoReminder table.
+	User         string // User table.
 }
 
 type schemaCtxKey struct{}

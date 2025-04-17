@@ -32,27 +32,18 @@ type UserEdges struct {
 	ModeratorUsers []*User `json:"moderator_users,omitempty"`
 	// Moderators holds the value of the moderators edge.
 	Moderators []*User `json:"moderators,omitempty"`
-	// PeoplePartnerUsers holds the value of the people_partner_users edge.
-	PeoplePartnerUsers []*User `json:"people_partner_users,omitempty"`
-	// PeoplePartner holds the value of the people_partner edge.
-	PeoplePartner []*User `json:"people_partner,omitempty"`
 	// Moderator holds the value of the moderator edge.
 	Moderator []*Moderator `json:"moderator,omitempty"`
-	// PeoplePartners holds the value of the people_partners edge.
-	PeoplePartners []*PeoplePartner `json:"people_partners,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [3]map[string]int
 
-	namedTodos              map[string][]*Todo
-	namedModeratorUsers     map[string][]*User
-	namedModerators         map[string][]*User
-	namedPeoplePartnerUsers map[string][]*User
-	namedPeoplePartner      map[string][]*User
-	namedModerator          map[string][]*Moderator
-	namedPeoplePartners     map[string][]*PeoplePartner
+	namedTodos          map[string][]*Todo
+	namedModeratorUsers map[string][]*User
+	namedModerators     map[string][]*User
+	namedModerator      map[string][]*Moderator
 }
 
 // TodosOrErr returns the Todos value or an error if the edge
@@ -82,40 +73,13 @@ func (e UserEdges) ModeratorsOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "moderators"}
 }
 
-// PeoplePartnerUsersOrErr returns the PeoplePartnerUsers value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) PeoplePartnerUsersOrErr() ([]*User, error) {
-	if e.loadedTypes[3] {
-		return e.PeoplePartnerUsers, nil
-	}
-	return nil, &NotLoadedError{edge: "people_partner_users"}
-}
-
-// PeoplePartnerOrErr returns the PeoplePartner value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) PeoplePartnerOrErr() ([]*User, error) {
-	if e.loadedTypes[4] {
-		return e.PeoplePartner, nil
-	}
-	return nil, &NotLoadedError{edge: "people_partner"}
-}
-
 // ModeratorOrErr returns the Moderator value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ModeratorOrErr() ([]*Moderator, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[3] {
 		return e.Moderator, nil
 	}
 	return nil, &NotLoadedError{edge: "moderator"}
-}
-
-// PeoplePartnersOrErr returns the PeoplePartners value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) PeoplePartnersOrErr() ([]*PeoplePartner, error) {
-	if e.loadedTypes[6] {
-		return e.PeoplePartners, nil
-	}
-	return nil, &NotLoadedError{edge: "people_partners"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -182,24 +146,9 @@ func (_m *User) QueryModerators() *UserQuery {
 	return NewUserClient(_m.config).QueryModerators(_m)
 }
 
-// QueryPeoplePartnerUsers queries the "people_partner_users" edge of the User entity.
-func (_m *User) QueryPeoplePartnerUsers() *UserQuery {
-	return NewUserClient(_m.config).QueryPeoplePartnerUsers(_m)
-}
-
-// QueryPeoplePartner queries the "people_partner" edge of the User entity.
-func (_m *User) QueryPeoplePartner() *UserQuery {
-	return NewUserClient(_m.config).QueryPeoplePartner(_m)
-}
-
 // QueryModerator queries the "moderator" edge of the User entity.
 func (_m *User) QueryModerator() *ModeratorQuery {
 	return NewUserClient(_m.config).QueryModerator(_m)
-}
-
-// QueryPeoplePartners queries the "people_partners" edge of the User entity.
-func (_m *User) QueryPeoplePartners() *PeoplePartnerQuery {
-	return NewUserClient(_m.config).QueryPeoplePartners(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -303,54 +252,6 @@ func (_m *User) appendNamedModerators(name string, edges ...*User) {
 	}
 }
 
-// NamedPeoplePartnerUsers returns the PeoplePartnerUsers named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedPeoplePartnerUsers(name string) ([]*User, error) {
-	if _m.Edges.namedPeoplePartnerUsers == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedPeoplePartnerUsers[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedPeoplePartnerUsers(name string, edges ...*User) {
-	if _m.Edges.namedPeoplePartnerUsers == nil {
-		_m.Edges.namedPeoplePartnerUsers = make(map[string][]*User)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedPeoplePartnerUsers[name] = []*User{}
-	} else {
-		_m.Edges.namedPeoplePartnerUsers[name] = append(_m.Edges.namedPeoplePartnerUsers[name], edges...)
-	}
-}
-
-// NamedPeoplePartner returns the PeoplePartner named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedPeoplePartner(name string) ([]*User, error) {
-	if _m.Edges.namedPeoplePartner == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedPeoplePartner[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedPeoplePartner(name string, edges ...*User) {
-	if _m.Edges.namedPeoplePartner == nil {
-		_m.Edges.namedPeoplePartner = make(map[string][]*User)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedPeoplePartner[name] = []*User{}
-	} else {
-		_m.Edges.namedPeoplePartner[name] = append(_m.Edges.namedPeoplePartner[name], edges...)
-	}
-}
-
 // NamedModerator returns the Moderator named value or an error if the edge was not
 // loaded in eager-loading with this name.
 func (_m *User) NamedModerator(name string) ([]*Moderator, error) {
@@ -372,30 +273,6 @@ func (_m *User) appendNamedModerator(name string, edges ...*Moderator) {
 		_m.Edges.namedModerator[name] = []*Moderator{}
 	} else {
 		_m.Edges.namedModerator[name] = append(_m.Edges.namedModerator[name], edges...)
-	}
-}
-
-// NamedPeoplePartners returns the PeoplePartners named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedPeoplePartners(name string) ([]*PeoplePartner, error) {
-	if _m.Edges.namedPeoplePartners == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedPeoplePartners[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedPeoplePartners(name string, edges ...*PeoplePartner) {
-	if _m.Edges.namedPeoplePartners == nil {
-		_m.Edges.namedPeoplePartners = make(map[string][]*PeoplePartner)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedPeoplePartners[name] = []*PeoplePartner{}
-	} else {
-		_m.Edges.namedPeoplePartners[name] = append(_m.Edges.namedPeoplePartners[name], edges...)
 	}
 }
 

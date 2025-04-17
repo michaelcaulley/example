@@ -4,7 +4,6 @@ package ent
 
 import (
 	"example/internal/ent/moderator"
-	"example/internal/ent/peoplepartner"
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
@@ -19,7 +18,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 6)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 5)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   moderator.Table,
@@ -43,27 +42,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 	}
 	graph.Nodes[1] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
-			Table:   peoplepartner.Table,
-			Columns: peoplepartner.Columns,
-			CompositeID: []*sqlgraph.FieldSpec{
-				{
-					Type:   field.TypeInt,
-					Column: peoplepartner.FieldUserID,
-				},
-				{
-					Type:   field.TypeInt,
-					Column: peoplepartner.FieldPeoplePartnerUserID,
-				},
-			},
-		},
-		Type: "PeoplePartner",
-		Fields: map[string]*sqlgraph.FieldSpec{
-			peoplepartner.FieldUserID:              {Type: field.TypeInt, Column: peoplepartner.FieldUserID},
-			peoplepartner.FieldPeoplePartnerUserID: {Type: field.TypeInt, Column: peoplepartner.FieldPeoplePartnerUserID},
-		},
-	}
-	graph.Nodes[2] = &sqlgraph.Node{
-		NodeSpec: sqlgraph.NodeSpec{
 			Table:   reminder.Table,
 			Columns: reminder.Columns,
 			ID: &sqlgraph.FieldSpec{
@@ -77,7 +55,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			reminder.FieldUpdatedAt: {Type: field.TypeTime, Column: reminder.FieldUpdatedAt},
 		},
 	}
-	graph.Nodes[3] = &sqlgraph.Node{
+	graph.Nodes[2] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   todo.Table,
 			Columns: todo.Columns,
@@ -93,7 +71,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			todo.FieldOwnerID: {Type: field.TypeInt, Column: todo.FieldOwnerID},
 		},
 	}
-	graph.Nodes[4] = &sqlgraph.Node{
+	graph.Nodes[3] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   todoreminder.Table,
 			Columns: todoreminder.Columns,
@@ -114,7 +92,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			todoreminder.FieldReminderID: {Type: field.TypeInt, Column: todoreminder.FieldReminderID},
 		},
 	}
-	graph.Nodes[5] = &sqlgraph.Node{
+	graph.Nodes[4] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
@@ -150,30 +128,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 			Bidi:    false,
 		},
 		"Moderator",
-		"User",
-	)
-	graph.MustAddE(
-		"user",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   peoplepartner.UserTable,
-			Columns: []string{peoplepartner.UserColumn},
-			Bidi:    false,
-		},
-		"PeoplePartner",
-		"User",
-	)
-	graph.MustAddE(
-		"people_partner",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   peoplepartner.PeoplePartnerTable,
-			Columns: []string{peoplepartner.PeoplePartnerColumn},
-			Bidi:    false,
-		},
-		"PeoplePartner",
 		"User",
 	)
 	graph.MustAddE(
@@ -297,30 +251,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"User",
 	)
 	graph.MustAddE(
-		"people_partner_users",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.PeoplePartnerUsersTable,
-			Columns: user.PeoplePartnerUsersPrimaryKey,
-			Bidi:    false,
-		},
-		"User",
-		"User",
-	)
-	graph.MustAddE(
-		"people_partner",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.PeoplePartnerTable,
-			Columns: user.PeoplePartnerPrimaryKey,
-			Bidi:    false,
-		},
-		"User",
-		"User",
-	)
-	graph.MustAddE(
 		"moderator",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -331,18 +261,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"User",
 		"Moderator",
-	)
-	graph.MustAddE(
-		"people_partners",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   user.PeoplePartnersTable,
-			Columns: []string{user.PeoplePartnersColumn},
-			Bidi:    false,
-		},
-		"User",
-		"PeoplePartner",
 	)
 	return graph
 }()
@@ -427,79 +345,6 @@ func (f *ModeratorFilter) WhereHasModeratorWith(preds ...predicate.User) {
 }
 
 // addPredicate implements the predicateAdder interface.
-func (_q *PeoplePartnerQuery) addPredicate(pred func(s *sql.Selector)) {
-	_q.predicates = append(_q.predicates, pred)
-}
-
-// Filter returns a Filter implementation to apply filters on the PeoplePartnerQuery builder.
-func (_q *PeoplePartnerQuery) Filter() *PeoplePartnerFilter {
-	return &PeoplePartnerFilter{config: _q.config, predicateAdder: _q}
-}
-
-// addPredicate implements the predicateAdder interface.
-func (m *PeoplePartnerMutation) addPredicate(pred func(s *sql.Selector)) {
-	m.predicates = append(m.predicates, pred)
-}
-
-// Filter returns an entql.Where implementation to apply filters on the PeoplePartnerMutation builder.
-func (m *PeoplePartnerMutation) Filter() *PeoplePartnerFilter {
-	return &PeoplePartnerFilter{config: m.config, predicateAdder: m}
-}
-
-// PeoplePartnerFilter provides a generic filtering capability at runtime for PeoplePartnerQuery.
-type PeoplePartnerFilter struct {
-	predicateAdder
-	config
-}
-
-// Where applies the entql predicate on the query filter.
-func (f *PeoplePartnerFilter) Where(p entql.P) {
-	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[1].Type, p, s); err != nil {
-			s.AddError(err)
-		}
-	})
-}
-
-// WhereUserID applies the entql int predicate on the user_id field.
-func (f *PeoplePartnerFilter) WhereUserID(p entql.IntP) {
-	f.Where(p.Field(peoplepartner.FieldUserID))
-}
-
-// WherePeoplePartnerUserID applies the entql int predicate on the people_partner_user_id field.
-func (f *PeoplePartnerFilter) WherePeoplePartnerUserID(p entql.IntP) {
-	f.Where(p.Field(peoplepartner.FieldPeoplePartnerUserID))
-}
-
-// WhereHasUser applies a predicate to check if query has an edge user.
-func (f *PeoplePartnerFilter) WhereHasUser() {
-	f.Where(entql.HasEdge("user"))
-}
-
-// WhereHasUserWith applies a predicate to check if query has an edge user with a given conditions (other predicates).
-func (f *PeoplePartnerFilter) WhereHasUserWith(preds ...predicate.User) {
-	f.Where(entql.HasEdgeWith("user", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
-// WhereHasPeoplePartner applies a predicate to check if query has an edge people_partner.
-func (f *PeoplePartnerFilter) WhereHasPeoplePartner() {
-	f.Where(entql.HasEdge("people_partner"))
-}
-
-// WhereHasPeoplePartnerWith applies a predicate to check if query has an edge people_partner with a given conditions (other predicates).
-func (f *PeoplePartnerFilter) WhereHasPeoplePartnerWith(preds ...predicate.User) {
-	f.Where(entql.HasEdgeWith("people_partner", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
-// addPredicate implements the predicateAdder interface.
 func (_q *ReminderQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
 }
@@ -528,7 +373,7 @@ type ReminderFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *ReminderFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[2].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[1].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -606,7 +451,7 @@ type TodoFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *TodoFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[3].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[2].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -703,7 +548,7 @@ type TodoReminderFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *TodoReminderFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[4].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[3].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -776,7 +621,7 @@ type UserFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[5].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[4].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -834,34 +679,6 @@ func (f *UserFilter) WhereHasModeratorsWith(preds ...predicate.User) {
 	})))
 }
 
-// WhereHasPeoplePartnerUsers applies a predicate to check if query has an edge people_partner_users.
-func (f *UserFilter) WhereHasPeoplePartnerUsers() {
-	f.Where(entql.HasEdge("people_partner_users"))
-}
-
-// WhereHasPeoplePartnerUsersWith applies a predicate to check if query has an edge people_partner_users with a given conditions (other predicates).
-func (f *UserFilter) WhereHasPeoplePartnerUsersWith(preds ...predicate.User) {
-	f.Where(entql.HasEdgeWith("people_partner_users", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
-// WhereHasPeoplePartner applies a predicate to check if query has an edge people_partner.
-func (f *UserFilter) WhereHasPeoplePartner() {
-	f.Where(entql.HasEdge("people_partner"))
-}
-
-// WhereHasPeoplePartnerWith applies a predicate to check if query has an edge people_partner with a given conditions (other predicates).
-func (f *UserFilter) WhereHasPeoplePartnerWith(preds ...predicate.User) {
-	f.Where(entql.HasEdgeWith("people_partner", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
 // WhereHasModerator applies a predicate to check if query has an edge moderator.
 func (f *UserFilter) WhereHasModerator() {
 	f.Where(entql.HasEdge("moderator"))
@@ -870,20 +687,6 @@ func (f *UserFilter) WhereHasModerator() {
 // WhereHasModeratorWith applies a predicate to check if query has an edge moderator with a given conditions (other predicates).
 func (f *UserFilter) WhereHasModeratorWith(preds ...predicate.Moderator) {
 	f.Where(entql.HasEdgeWith("moderator", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
-// WhereHasPeoplePartners applies a predicate to check if query has an edge people_partners.
-func (f *UserFilter) WhereHasPeoplePartners() {
-	f.Where(entql.HasEdge("people_partners"))
-}
-
-// WhereHasPeoplePartnersWith applies a predicate to check if query has an edge people_partners with a given conditions (other predicates).
-func (f *UserFilter) WhereHasPeoplePartnersWith(preds ...predicate.PeoplePartner) {
-	f.Where(entql.HasEdgeWith("people_partners", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}

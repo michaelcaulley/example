@@ -12,7 +12,6 @@ import (
 	"example/internal/ent/migrate"
 
 	"example/internal/ent/moderator"
-	"example/internal/ent/peoplepartner"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
 	"example/internal/ent/todoreminder"
@@ -34,8 +33,6 @@ type Client struct {
 	Schema *migrate.Schema
 	// Moderator is the client for interacting with the Moderator builders.
 	Moderator *ModeratorClient
-	// PeoplePartner is the client for interacting with the PeoplePartner builders.
-	PeoplePartner *PeoplePartnerClient
 	// Reminder is the client for interacting with the Reminder builders.
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
@@ -56,7 +53,6 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Moderator = NewModeratorClient(c.config)
-	c.PeoplePartner = NewPeoplePartnerClient(c.config)
 	c.Reminder = NewReminderClient(c.config)
 	c.Todo = NewTodoClient(c.config)
 	c.TodoReminder = NewTodoReminderClient(c.config)
@@ -154,14 +150,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:           ctx,
-		config:        cfg,
-		Moderator:     NewModeratorClient(cfg),
-		PeoplePartner: NewPeoplePartnerClient(cfg),
-		Reminder:      NewReminderClient(cfg),
-		Todo:          NewTodoClient(cfg),
-		TodoReminder:  NewTodoReminderClient(cfg),
-		User:          NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Moderator:    NewModeratorClient(cfg),
+		Reminder:     NewReminderClient(cfg),
+		Todo:         NewTodoClient(cfg),
+		TodoReminder: NewTodoReminderClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -179,14 +174,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:           ctx,
-		config:        cfg,
-		Moderator:     NewModeratorClient(cfg),
-		PeoplePartner: NewPeoplePartnerClient(cfg),
-		Reminder:      NewReminderClient(cfg),
-		Todo:          NewTodoClient(cfg),
-		TodoReminder:  NewTodoReminderClient(cfg),
-		User:          NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Moderator:    NewModeratorClient(cfg),
+		Reminder:     NewReminderClient(cfg),
+		Todo:         NewTodoClient(cfg),
+		TodoReminder: NewTodoReminderClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -215,21 +209,21 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	for _, n := range []interface{ Use(...Hook) }{
-		c.Moderator, c.PeoplePartner, c.Reminder, c.Todo, c.TodoReminder, c.User,
-	} {
-		n.Use(hooks...)
-	}
+	c.Moderator.Use(hooks...)
+	c.Reminder.Use(hooks...)
+	c.Todo.Use(hooks...)
+	c.TodoReminder.Use(hooks...)
+	c.User.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Moderator, c.PeoplePartner, c.Reminder, c.Todo, c.TodoReminder, c.User,
-	} {
-		n.Intercept(interceptors...)
-	}
+	c.Moderator.Intercept(interceptors...)
+	c.Reminder.Intercept(interceptors...)
+	c.Todo.Intercept(interceptors...)
+	c.TodoReminder.Intercept(interceptors...)
+	c.User.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -237,8 +231,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ModeratorMutation:
 		return c.Moderator.mutate(ctx, m)
-	case *PeoplePartnerMutation:
-		return c.PeoplePartner.mutate(ctx, m)
 	case *ReminderMutation:
 		return c.Reminder.mutate(ctx, m)
 	case *TodoMutation:
@@ -365,122 +357,6 @@ func (c *ModeratorClient) mutate(ctx context.Context, m *ModeratorMutation) (Val
 		return (&ModeratorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Moderator mutation op: %q", m.Op())
-	}
-}
-
-// PeoplePartnerClient is a client for the PeoplePartner schema.
-type PeoplePartnerClient struct {
-	config
-}
-
-// NewPeoplePartnerClient returns a client for the PeoplePartner from the given config.
-func NewPeoplePartnerClient(c config) *PeoplePartnerClient {
-	return &PeoplePartnerClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `peoplepartner.Hooks(f(g(h())))`.
-func (c *PeoplePartnerClient) Use(hooks ...Hook) {
-	c.hooks.PeoplePartner = append(c.hooks.PeoplePartner, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `peoplepartner.Intercept(f(g(h())))`.
-func (c *PeoplePartnerClient) Intercept(interceptors ...Interceptor) {
-	c.inters.PeoplePartner = append(c.inters.PeoplePartner, interceptors...)
-}
-
-// Create returns a builder for creating a PeoplePartner entity.
-func (c *PeoplePartnerClient) Create() *PeoplePartnerCreate {
-	mutation := newPeoplePartnerMutation(c.config, OpCreate)
-	return &PeoplePartnerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of PeoplePartner entities.
-func (c *PeoplePartnerClient) CreateBulk(builders ...*PeoplePartnerCreate) *PeoplePartnerCreateBulk {
-	return &PeoplePartnerCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *PeoplePartnerClient) MapCreateBulk(slice any, setFunc func(*PeoplePartnerCreate, int)) *PeoplePartnerCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &PeoplePartnerCreateBulk{err: fmt.Errorf("calling to PeoplePartnerClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*PeoplePartnerCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &PeoplePartnerCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for PeoplePartner.
-func (c *PeoplePartnerClient) Update() *PeoplePartnerUpdate {
-	mutation := newPeoplePartnerMutation(c.config, OpUpdate)
-	return &PeoplePartnerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *PeoplePartnerClient) UpdateOne(_m *PeoplePartner) *PeoplePartnerUpdateOne {
-	mutation := newPeoplePartnerMutation(c.config, OpUpdateOne)
-	mutation.user = &_m.UserID
-	mutation.people_partner = &_m.PeoplePartnerUserID
-	return &PeoplePartnerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for PeoplePartner.
-func (c *PeoplePartnerClient) Delete() *PeoplePartnerDelete {
-	mutation := newPeoplePartnerMutation(c.config, OpDelete)
-	return &PeoplePartnerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Query returns a query builder for PeoplePartner.
-func (c *PeoplePartnerClient) Query() *PeoplePartnerQuery {
-	return &PeoplePartnerQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypePeoplePartner},
-		inters: c.Interceptors(),
-	}
-}
-
-// QueryUser queries the user edge of a PeoplePartner.
-func (c *PeoplePartnerClient) QueryUser(_m *PeoplePartner) *UserQuery {
-	return c.Query().
-		Where(peoplepartner.UserID(_m.UserID), peoplepartner.PeoplePartnerUserID(_m.PeoplePartnerUserID)).
-		QueryUser()
-}
-
-// QueryPeoplePartner queries the people_partner edge of a PeoplePartner.
-func (c *PeoplePartnerClient) QueryPeoplePartner(_m *PeoplePartner) *UserQuery {
-	return c.Query().
-		Where(peoplepartner.UserID(_m.UserID), peoplepartner.PeoplePartnerUserID(_m.PeoplePartnerUserID)).
-		QueryPeoplePartner()
-}
-
-// Hooks returns the client hooks.
-func (c *PeoplePartnerClient) Hooks() []Hook {
-	return c.hooks.PeoplePartner
-}
-
-// Interceptors returns the client interceptors.
-func (c *PeoplePartnerClient) Interceptors() []Interceptor {
-	return c.inters.PeoplePartner
-}
-
-func (c *PeoplePartnerClient) mutate(ctx context.Context, m *PeoplePartnerMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&PeoplePartnerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&PeoplePartnerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&PeoplePartnerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&PeoplePartnerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown PeoplePartner mutation op: %q", m.Op())
 	}
 }
 
@@ -1127,44 +1003,6 @@ func (c *UserClient) QueryModerators(_m *User) *UserQuery {
 	return query
 }
 
-// QueryPeoplePartnerUsers queries the people_partner_users edge of a User.
-func (c *UserClient) QueryPeoplePartnerUsers(_m *User) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.PeoplePartnerUsersTable, user.PeoplePartnerUsersPrimaryKey...),
-		)
-		schemaConfig := _m.schemaConfig
-		step.To.Schema = schemaConfig.User
-		step.Edge.Schema = schemaConfig.UserPeoplePartner
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPeoplePartner queries the people_partner edge of a User.
-func (c *UserClient) QueryPeoplePartner(_m *User) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, user.PeoplePartnerTable, user.PeoplePartnerPrimaryKey...),
-		)
-		schemaConfig := _m.schemaConfig
-		step.To.Schema = schemaConfig.User
-		step.Edge.Schema = schemaConfig.PeoplePartner
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryModerator queries the moderator edge of a User.
 func (c *UserClient) QueryModerator(_m *User) *ModeratorQuery {
 	query := (&ModeratorClient{config: c.config}).Query()
@@ -1178,25 +1016,6 @@ func (c *UserClient) QueryModerator(_m *User) *ModeratorQuery {
 		schemaConfig := _m.schemaConfig
 		step.To.Schema = schemaConfig.Moderator
 		step.Edge.Schema = schemaConfig.Moderator
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPeoplePartners queries the people_partners edge of a User.
-func (c *UserClient) QueryPeoplePartners(_m *User) *PeoplePartnerQuery {
-	query := (&PeoplePartnerClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(peoplepartner.Table, peoplepartner.UserColumn),
-			sqlgraph.Edge(sqlgraph.O2M, true, user.PeoplePartnersTable, user.PeoplePartnersColumn),
-		)
-		schemaConfig := _m.schemaConfig
-		step.To.Schema = schemaConfig.PeoplePartner
-		step.Edge.Schema = schemaConfig.PeoplePartner
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -1231,22 +1050,21 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Moderator, PeoplePartner, Reminder, Todo, TodoReminder, User []ent.Hook
+		Moderator, Reminder, Todo, TodoReminder, User []ent.Hook
 	}
 	inters struct {
-		Moderator, PeoplePartner, Reminder, Todo, TodoReminder, User []ent.Interceptor
+		Moderator, Reminder, Todo, TodoReminder, User []ent.Interceptor
 	}
 )
 
 var (
 	// DefaultSchemaConfig represents the default schema names for all tables as defined in ent/schema.
 	DefaultSchemaConfig = SchemaConfig{
-		Moderator:     tableSchemas[1],
-		PeoplePartner: tableSchemas[1],
-		Reminder:      tableSchemas[0],
-		Todo:          tableSchemas[0],
-		TodoReminder:  tableSchemas[0],
-		User:          tableSchemas[1],
+		Moderator:    tableSchemas[1],
+		Reminder:     tableSchemas[0],
+		Todo:         tableSchemas[0],
+		TodoReminder: tableSchemas[0],
+		User:         tableSchemas[1],
 	}
 	tableSchemas = [...]string{"todo", "user"}
 )

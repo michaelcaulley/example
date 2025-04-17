@@ -73,36 +73,6 @@ func (_c *UserCreate) AddModerators(v ...*User) *UserCreate {
 	return _c.AddModeratorIDs(ids...)
 }
 
-// AddPeoplePartnerUserIDs adds the "people_partner_users" edge to the User entity by IDs.
-func (_c *UserCreate) AddPeoplePartnerUserIDs(ids ...int) *UserCreate {
-	_c.mutation.AddPeoplePartnerUserIDs(ids...)
-	return _c
-}
-
-// AddPeoplePartnerUsers adds the "people_partner_users" edges to the User entity.
-func (_c *UserCreate) AddPeoplePartnerUsers(v ...*User) *UserCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddPeoplePartnerUserIDs(ids...)
-}
-
-// AddPeoplePartnerIDs adds the "people_partner" edge to the User entity by IDs.
-func (_c *UserCreate) AddPeoplePartnerIDs(ids ...int) *UserCreate {
-	_c.mutation.AddPeoplePartnerIDs(ids...)
-	return _c
-}
-
-// AddPeoplePartner adds the "people_partner" edges to the User entity.
-func (_c *UserCreate) AddPeoplePartner(v ...*User) *UserCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddPeoplePartnerIDs(ids...)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (_c *UserCreate) Mutation() *UserMutation {
 	return _c.mutation
@@ -218,40 +188,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			},
 		}
 		edge.Schema = _c.schemaConfig.Moderator
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.PeoplePartnerUsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.PeoplePartnerUsersTable,
-			Columns: user.PeoplePartnerUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		edge.Schema = _c.schemaConfig.UserPeoplePartner
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.PeoplePartnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.PeoplePartnerTable,
-			Columns: user.PeoplePartnerPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		edge.Schema = _c.schemaConfig.PeoplePartner
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}

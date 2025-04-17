@@ -551,14 +551,6 @@ type UserWhereInput struct {
 	// "moderators" edge predicates.
 	HasModerators     *bool             `json:"hasModerators,omitempty"`
 	HasModeratorsWith []*UserWhereInput `json:"hasModeratorsWith,omitempty"`
-
-	// "people_partner_users" edge predicates.
-	HasPeoplePartnerUsers     *bool             `json:"hasPeoplePartnerUsers,omitempty"`
-	HasPeoplePartnerUsersWith []*UserWhereInput `json:"hasPeoplePartnerUsersWith,omitempty"`
-
-	// "people_partner" edge predicates.
-	HasPeoplePartner     *bool             `json:"hasPeoplePartner,omitempty"`
-	HasPeoplePartnerWith []*UserWhereInput `json:"hasPeoplePartnerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -749,42 +741,6 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasModeratorsWith(with...))
-	}
-	if i.HasPeoplePartnerUsers != nil {
-		p := user.HasPeoplePartnerUsers()
-		if !*i.HasPeoplePartnerUsers {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasPeoplePartnerUsersWith) > 0 {
-		with := make([]predicate.User, 0, len(i.HasPeoplePartnerUsersWith))
-		for _, w := range i.HasPeoplePartnerUsersWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasPeoplePartnerUsersWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasPeoplePartnerUsersWith(with...))
-	}
-	if i.HasPeoplePartner != nil {
-		p := user.HasPeoplePartner()
-		if !*i.HasPeoplePartner {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasPeoplePartnerWith) > 0 {
-		with := make([]predicate.User, 0, len(i.HasPeoplePartnerWith))
-		for _, w := range i.HasPeoplePartnerWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasPeoplePartnerWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasPeoplePartnerWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

@@ -27,10 +27,6 @@ func (User) Edges() []ent.Edge {
 			Through("moderator", Moderator.Type).
 			From("moderator_users").
 			Annotations(entgql.RelayConnection()),
-		edge.To("people_partner", User.Type).
-			Through("people_partners", PeoplePartner.Type).
-			From("people_partner_users").
-			Annotations(entgql.RelayConnection()),
 	}
 }
 

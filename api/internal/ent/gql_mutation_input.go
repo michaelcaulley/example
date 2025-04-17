@@ -24,12 +24,10 @@ func (c *TodoCreate) SetInput(i CreateTodoInput) *TodoCreate {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name                 string
-	TodoIDs              []int
-	ModeratorUserIDs     []int
-	ModeratorIDs         []int
-	PeoplePartnerUserIDs []int
-	PeoplePartnerIDs     []int
+	Name             string
+	TodoIDs          []int
+	ModeratorUserIDs []int
+	ModeratorIDs     []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -43,12 +41,6 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.ModeratorIDs; len(v) > 0 {
 		m.AddModeratorIDs(v...)
-	}
-	if v := i.PeoplePartnerUserIDs; len(v) > 0 {
-		m.AddPeoplePartnerUserIDs(v...)
-	}
-	if v := i.PeoplePartnerIDs; len(v) > 0 {
-		m.AddPeoplePartnerIDs(v...)
 	}
 }
 

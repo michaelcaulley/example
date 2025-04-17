@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"example/internal/ent/moderator"
-	"example/internal/ent/peoplepartner"
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
@@ -29,12 +28,11 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeModerator     = "Moderator"
-	TypePeoplePartner = "PeoplePartner"
-	TypeReminder      = "Reminder"
-	TypeTodo          = "Todo"
-	TypeTodoReminder  = "TodoReminder"
-	TypeUser          = "User"
+	TypeModerator    = "Moderator"
+	TypeReminder     = "Reminder"
+	TypeTodo         = "Todo"
+	TypeTodoReminder = "TodoReminder"
+	TypeUser         = "User"
 )
 
 // ModeratorMutation represents an operation that mutates the Moderator nodes in the graph.
@@ -430,401 +428,6 @@ func (m *ModeratorMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Moderator edge %s", name)
-}
-
-// PeoplePartnerMutation represents an operation that mutates the PeoplePartner nodes in the graph.
-type PeoplePartnerMutation struct {
-	config
-	op                    Op
-	typ                   string
-	clearedFields         map[string]struct{}
-	user                  *int
-	cleareduser           bool
-	people_partner        *int
-	clearedpeople_partner bool
-	done                  bool
-	oldValue              func(context.Context) (*PeoplePartner, error)
-	predicates            []predicate.PeoplePartner
-}
-
-var _ ent.Mutation = (*PeoplePartnerMutation)(nil)
-
-// peoplepartnerOption allows management of the mutation configuration using functional options.
-type peoplepartnerOption func(*PeoplePartnerMutation)
-
-// newPeoplePartnerMutation creates new mutation for the PeoplePartner entity.
-func newPeoplePartnerMutation(c config, op Op, opts ...peoplepartnerOption) *PeoplePartnerMutation {
-	m := &PeoplePartnerMutation{
-		config:        c,
-		op:            op,
-		typ:           TypePeoplePartner,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m PeoplePartnerMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m PeoplePartnerMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetUserID sets the "user_id" field.
-func (m *PeoplePartnerMutation) SetUserID(i int) {
-	m.user = &i
-}
-
-// UserID returns the value of the "user_id" field in the mutation.
-func (m *PeoplePartnerMutation) UserID() (r int, exists bool) {
-	v := m.user
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetUserID resets all changes to the "user_id" field.
-func (m *PeoplePartnerMutation) ResetUserID() {
-	m.user = nil
-}
-
-// SetPeoplePartnerUserID sets the "people_partner_user_id" field.
-func (m *PeoplePartnerMutation) SetPeoplePartnerUserID(i int) {
-	m.people_partner = &i
-}
-
-// PeoplePartnerUserID returns the value of the "people_partner_user_id" field in the mutation.
-func (m *PeoplePartnerMutation) PeoplePartnerUserID() (r int, exists bool) {
-	v := m.people_partner
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetPeoplePartnerUserID resets all changes to the "people_partner_user_id" field.
-func (m *PeoplePartnerMutation) ResetPeoplePartnerUserID() {
-	m.people_partner = nil
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *PeoplePartnerMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[peoplepartner.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *PeoplePartnerMutation) UserCleared() bool {
-	return m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *PeoplePartnerMutation) UserIDs() (ids []int) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *PeoplePartnerMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
-// SetPeoplePartnerID sets the "people_partner" edge to the User entity by id.
-func (m *PeoplePartnerMutation) SetPeoplePartnerID(id int) {
-	m.people_partner = &id
-}
-
-// ClearPeoplePartner clears the "people_partner" edge to the User entity.
-func (m *PeoplePartnerMutation) ClearPeoplePartner() {
-	m.clearedpeople_partner = true
-	m.clearedFields[peoplepartner.FieldPeoplePartnerUserID] = struct{}{}
-}
-
-// PeoplePartnerCleared reports if the "people_partner" edge to the User entity was cleared.
-func (m *PeoplePartnerMutation) PeoplePartnerCleared() bool {
-	return m.clearedpeople_partner
-}
-
-// PeoplePartnerID returns the "people_partner" edge ID in the mutation.
-func (m *PeoplePartnerMutation) PeoplePartnerID() (id int, exists bool) {
-	if m.people_partner != nil {
-		return *m.people_partner, true
-	}
-	return
-}
-
-// PeoplePartnerIDs returns the "people_partner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// PeoplePartnerID instead. It exists only for internal usage by the builders.
-func (m *PeoplePartnerMutation) PeoplePartnerIDs() (ids []int) {
-	if id := m.people_partner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetPeoplePartner resets all changes to the "people_partner" edge.
-func (m *PeoplePartnerMutation) ResetPeoplePartner() {
-	m.people_partner = nil
-	m.clearedpeople_partner = false
-}
-
-// Where appends a list predicates to the PeoplePartnerMutation builder.
-func (m *PeoplePartnerMutation) Where(ps ...predicate.PeoplePartner) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the PeoplePartnerMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *PeoplePartnerMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.PeoplePartner, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *PeoplePartnerMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *PeoplePartnerMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (PeoplePartner).
-func (m *PeoplePartnerMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *PeoplePartnerMutation) Fields() []string {
-	fields := make([]string, 0, 2)
-	if m.user != nil {
-		fields = append(fields, peoplepartner.FieldUserID)
-	}
-	if m.people_partner != nil {
-		fields = append(fields, peoplepartner.FieldPeoplePartnerUserID)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *PeoplePartnerMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case peoplepartner.FieldUserID:
-		return m.UserID()
-	case peoplepartner.FieldPeoplePartnerUserID:
-		return m.PeoplePartnerUserID()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *PeoplePartnerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	return nil, errors.New("edge schema PeoplePartner does not support getting old values")
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *PeoplePartnerMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case peoplepartner.FieldUserID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUserID(v)
-		return nil
-	case peoplepartner.FieldPeoplePartnerUserID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPeoplePartnerUserID(v)
-		return nil
-	}
-	return fmt.Errorf("unknown PeoplePartner field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *PeoplePartnerMutation) AddedFields() []string {
-	var fields []string
-	return fields
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *PeoplePartnerMutation) AddedField(name string) (ent.Value, bool) {
-	switch name {
-	}
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *PeoplePartnerMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown PeoplePartner numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *PeoplePartnerMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *PeoplePartnerMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *PeoplePartnerMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown PeoplePartner nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *PeoplePartnerMutation) ResetField(name string) error {
-	switch name {
-	case peoplepartner.FieldUserID:
-		m.ResetUserID()
-		return nil
-	case peoplepartner.FieldPeoplePartnerUserID:
-		m.ResetPeoplePartnerUserID()
-		return nil
-	}
-	return fmt.Errorf("unknown PeoplePartner field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *PeoplePartnerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.user != nil {
-		edges = append(edges, peoplepartner.EdgeUser)
-	}
-	if m.people_partner != nil {
-		edges = append(edges, peoplepartner.EdgePeoplePartner)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *PeoplePartnerMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case peoplepartner.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
-	case peoplepartner.EdgePeoplePartner:
-		if id := m.people_partner; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *PeoplePartnerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *PeoplePartnerMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *PeoplePartnerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.cleareduser {
-		edges = append(edges, peoplepartner.EdgeUser)
-	}
-	if m.clearedpeople_partner {
-		edges = append(edges, peoplepartner.EdgePeoplePartner)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *PeoplePartnerMutation) EdgeCleared(name string) bool {
-	switch name {
-	case peoplepartner.EdgeUser:
-		return m.cleareduser
-	case peoplepartner.EdgePeoplePartner:
-		return m.clearedpeople_partner
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *PeoplePartnerMutation) ClearEdge(name string) error {
-	switch name {
-	case peoplepartner.EdgeUser:
-		m.ClearUser()
-		return nil
-	case peoplepartner.EdgePeoplePartner:
-		m.ClearPeoplePartner()
-		return nil
-	}
-	return fmt.Errorf("unknown PeoplePartner unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *PeoplePartnerMutation) ResetEdge(name string) error {
-	switch name {
-	case peoplepartner.EdgeUser:
-		m.ResetUser()
-		return nil
-	case peoplepartner.EdgePeoplePartner:
-		m.ResetPeoplePartner()
-		return nil
-	}
-	return fmt.Errorf("unknown PeoplePartner edge %s", name)
 }
 
 // ReminderMutation represents an operation that mutates the Reminder nodes in the graph.
@@ -2283,29 +1886,23 @@ func (m *TodoReminderMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *int
-	name                        *string
-	clearedFields               map[string]struct{}
-	todos                       map[int]struct{}
-	removedtodos                map[int]struct{}
-	clearedtodos                bool
-	moderator_users             map[int]struct{}
-	removedmoderator_users      map[int]struct{}
-	clearedmoderator_users      bool
-	moderators                  map[int]struct{}
-	removedmoderators           map[int]struct{}
-	clearedmoderators           bool
-	people_partner_users        map[int]struct{}
-	removedpeople_partner_users map[int]struct{}
-	clearedpeople_partner_users bool
-	people_partner              map[int]struct{}
-	removedpeople_partner       map[int]struct{}
-	clearedpeople_partner       bool
-	done                        bool
-	oldValue                    func(context.Context) (*User, error)
-	predicates                  []predicate.User
+	op                     Op
+	typ                    string
+	id                     *int
+	name                   *string
+	clearedFields          map[string]struct{}
+	todos                  map[int]struct{}
+	removedtodos           map[int]struct{}
+	clearedtodos           bool
+	moderator_users        map[int]struct{}
+	removedmoderator_users map[int]struct{}
+	clearedmoderator_users bool
+	moderators             map[int]struct{}
+	removedmoderators      map[int]struct{}
+	clearedmoderators      bool
+	done                   bool
+	oldValue               func(context.Context) (*User, error)
+	predicates             []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -2604,114 +2201,6 @@ func (m *UserMutation) ResetModerators() {
 	m.removedmoderators = nil
 }
 
-// AddPeoplePartnerUserIDs adds the "people_partner_users" edge to the User entity by ids.
-func (m *UserMutation) AddPeoplePartnerUserIDs(ids ...int) {
-	if m.people_partner_users == nil {
-		m.people_partner_users = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.people_partner_users[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPeoplePartnerUsers clears the "people_partner_users" edge to the User entity.
-func (m *UserMutation) ClearPeoplePartnerUsers() {
-	m.clearedpeople_partner_users = true
-}
-
-// PeoplePartnerUsersCleared reports if the "people_partner_users" edge to the User entity was cleared.
-func (m *UserMutation) PeoplePartnerUsersCleared() bool {
-	return m.clearedpeople_partner_users
-}
-
-// RemovePeoplePartnerUserIDs removes the "people_partner_users" edge to the User entity by IDs.
-func (m *UserMutation) RemovePeoplePartnerUserIDs(ids ...int) {
-	if m.removedpeople_partner_users == nil {
-		m.removedpeople_partner_users = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.people_partner_users, ids[i])
-		m.removedpeople_partner_users[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPeoplePartnerUsers returns the removed IDs of the "people_partner_users" edge to the User entity.
-func (m *UserMutation) RemovedPeoplePartnerUsersIDs() (ids []int) {
-	for id := range m.removedpeople_partner_users {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PeoplePartnerUsersIDs returns the "people_partner_users" edge IDs in the mutation.
-func (m *UserMutation) PeoplePartnerUsersIDs() (ids []int) {
-	for id := range m.people_partner_users {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPeoplePartnerUsers resets all changes to the "people_partner_users" edge.
-func (m *UserMutation) ResetPeoplePartnerUsers() {
-	m.people_partner_users = nil
-	m.clearedpeople_partner_users = false
-	m.removedpeople_partner_users = nil
-}
-
-// AddPeoplePartnerIDs adds the "people_partner" edge to the User entity by ids.
-func (m *UserMutation) AddPeoplePartnerIDs(ids ...int) {
-	if m.people_partner == nil {
-		m.people_partner = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.people_partner[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPeoplePartner clears the "people_partner" edge to the User entity.
-func (m *UserMutation) ClearPeoplePartner() {
-	m.clearedpeople_partner = true
-}
-
-// PeoplePartnerCleared reports if the "people_partner" edge to the User entity was cleared.
-func (m *UserMutation) PeoplePartnerCleared() bool {
-	return m.clearedpeople_partner
-}
-
-// RemovePeoplePartnerIDs removes the "people_partner" edge to the User entity by IDs.
-func (m *UserMutation) RemovePeoplePartnerIDs(ids ...int) {
-	if m.removedpeople_partner == nil {
-		m.removedpeople_partner = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.people_partner, ids[i])
-		m.removedpeople_partner[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPeoplePartner returns the removed IDs of the "people_partner" edge to the User entity.
-func (m *UserMutation) RemovedPeoplePartnerIDs() (ids []int) {
-	for id := range m.removedpeople_partner {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PeoplePartnerIDs returns the "people_partner" edge IDs in the mutation.
-func (m *UserMutation) PeoplePartnerIDs() (ids []int) {
-	for id := range m.people_partner {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPeoplePartner resets all changes to the "people_partner" edge.
-func (m *UserMutation) ResetPeoplePartner() {
-	m.people_partner = nil
-	m.clearedpeople_partner = false
-	m.removedpeople_partner = nil
-}
-
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -2845,7 +2334,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.todos != nil {
 		edges = append(edges, user.EdgeTodos)
 	}
@@ -2854,12 +2343,6 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.moderators != nil {
 		edges = append(edges, user.EdgeModerators)
-	}
-	if m.people_partner_users != nil {
-		edges = append(edges, user.EdgePeoplePartnerUsers)
-	}
-	if m.people_partner != nil {
-		edges = append(edges, user.EdgePeoplePartner)
 	}
 	return edges
 }
@@ -2886,25 +2369,13 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgePeoplePartnerUsers:
-		ids := make([]ent.Value, 0, len(m.people_partner_users))
-		for id := range m.people_partner_users {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgePeoplePartner:
-		ids := make([]ent.Value, 0, len(m.people_partner))
-		for id := range m.people_partner {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.removedtodos != nil {
 		edges = append(edges, user.EdgeTodos)
 	}
@@ -2913,12 +2384,6 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmoderators != nil {
 		edges = append(edges, user.EdgeModerators)
-	}
-	if m.removedpeople_partner_users != nil {
-		edges = append(edges, user.EdgePeoplePartnerUsers)
-	}
-	if m.removedpeople_partner != nil {
-		edges = append(edges, user.EdgePeoplePartner)
 	}
 	return edges
 }
@@ -2945,25 +2410,13 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgePeoplePartnerUsers:
-		ids := make([]ent.Value, 0, len(m.removedpeople_partner_users))
-		for id := range m.removedpeople_partner_users {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgePeoplePartner:
-		ids := make([]ent.Value, 0, len(m.removedpeople_partner))
-		for id := range m.removedpeople_partner {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.clearedtodos {
 		edges = append(edges, user.EdgeTodos)
 	}
@@ -2972,12 +2425,6 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedmoderators {
 		edges = append(edges, user.EdgeModerators)
-	}
-	if m.clearedpeople_partner_users {
-		edges = append(edges, user.EdgePeoplePartnerUsers)
-	}
-	if m.clearedpeople_partner {
-		edges = append(edges, user.EdgePeoplePartner)
 	}
 	return edges
 }
@@ -2992,10 +2439,6 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmoderator_users
 	case user.EdgeModerators:
 		return m.clearedmoderators
-	case user.EdgePeoplePartnerUsers:
-		return m.clearedpeople_partner_users
-	case user.EdgePeoplePartner:
-		return m.clearedpeople_partner
 	}
 	return false
 }
@@ -3020,12 +2463,6 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeModerators:
 		m.ResetModerators()
-		return nil
-	case user.EdgePeoplePartnerUsers:
-		m.ResetPeoplePartnerUsers()
-		return nil
-	case user.EdgePeoplePartner:
-		m.ResetPeoplePartner()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

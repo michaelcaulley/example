@@ -17,8 +17,6 @@ input CreateUserInput {
   todoIDs: [ID!]
   moderatorUserIDs: [ID!]
   moderatorIDs: [ID!]
-  peoplePartnerUserIDs: [ID!]
-  peoplePartnerIDs: [ID!]
 }
 """
 Define a Relay Cursor type:
@@ -379,33 +377,6 @@ type User implements Node {
     where: UserWhereInput
   ): UserConnection!
   moderators: [User!]
-  peoplePartnerUsers(
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
-
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
-
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    Filtering options for Users returned from the connection.
-    """
-    where: UserWhereInput
-  ): UserConnection!
-  peoplePartner: [User!]
 }
 """
 A connection to a list of items.
@@ -487,14 +458,4 @@ input UserWhereInput {
   """
   hasModerators: Boolean
   hasModeratorsWith: [UserWhereInput!]
-  """
-  people_partner_users edge predicates
-  """
-  hasPeoplePartnerUsers: Boolean
-  hasPeoplePartnerUsersWith: [UserWhereInput!]
-  """
-  people_partner edge predicates
-  """
-  hasPeoplePartner: Boolean
-  hasPeoplePartnerWith: [UserWhereInput!]
 }

@@ -104,13 +104,11 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		ID                 func(childComplexity int) int
-		ModeratorUsers     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.UserWhereInput) int
-		Moderators         func(childComplexity int) int
-		Name               func(childComplexity int) int
-		PeoplePartner      func(childComplexity int) int
-		PeoplePartnerUsers func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.UserWhereInput) int
-		Todos              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.TodoWhereInput) int
+		ID             func(childComplexity int) int
+		ModeratorUsers func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.UserWhereInput) int
+		Moderators     func(childComplexity int) int
+		Name           func(childComplexity int) int
+		Todos          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.TodoWhereInput) int
 	}
 
 	UserConnection struct {
@@ -432,25 +430,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Name(childComplexity), true
-
-	case "User.peoplePartner":
-		if e.complexity.User.PeoplePartner == nil {
-			break
-		}
-
-		return e.complexity.User.PeoplePartner(childComplexity), true
-
-	case "User.peoplePartnerUsers":
-		if e.complexity.User.PeoplePartnerUsers == nil {
-			break
-		}
-
-		args, err := ec.field_User_peoplePartnerUsers_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.User.PeoplePartnerUsers(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*ent.UserWhereInput)), true
 
 	case "User.todos":
 		if e.complexity.User.Todos == nil {
@@ -1188,126 +1167,6 @@ func (ec *executionContext) field_User_moderatorUsers_argsWhere(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_User_peoplePartnerUsers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_User_peoplePartnerUsers_argsAfter(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg0
-	arg1, err := ec.field_User_peoplePartnerUsers_argsFirst(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg1
-	arg2, err := ec.field_User_peoplePartnerUsers_argsBefore(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg2
-	arg3, err := ec.field_User_peoplePartnerUsers_argsLast(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg3
-	arg4, err := ec.field_User_peoplePartnerUsers_argsWhere(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["where"] = arg4
-	return args, nil
-}
-func (ec *executionContext) field_User_peoplePartnerUsers_argsAfter(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*entgql.Cursor[int], error) {
-	if _, ok := rawArgs["after"]; !ok {
-		var zeroVal *entgql.Cursor[int]
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-	if tmp, ok := rawArgs["after"]; ok {
-		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
-	}
-
-	var zeroVal *entgql.Cursor[int]
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_User_peoplePartnerUsers_argsFirst(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*int, error) {
-	if _, ok := rawArgs["first"]; !ok {
-		var zeroVal *int
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-	if tmp, ok := rawArgs["first"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
-	}
-
-	var zeroVal *int
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_User_peoplePartnerUsers_argsBefore(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*entgql.Cursor[int], error) {
-	if _, ok := rawArgs["before"]; !ok {
-		var zeroVal *entgql.Cursor[int]
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-	if tmp, ok := rawArgs["before"]; ok {
-		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
-	}
-
-	var zeroVal *entgql.Cursor[int]
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_User_peoplePartnerUsers_argsLast(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*int, error) {
-	if _, ok := rawArgs["last"]; !ok {
-		var zeroVal *int
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-	if tmp, ok := rawArgs["last"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
-	}
-
-	var zeroVal *int
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_User_peoplePartnerUsers_argsWhere(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*ent.UserWhereInput, error) {
-	if _, ok := rawArgs["where"]; !ok {
-		var zeroVal *ent.UserWhereInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-	if tmp, ok := rawArgs["where"]; ok {
-		return ec.unmarshalOUserWhereInput2ᚖexampleᚋinternalᚋentᚐUserWhereInput(ctx, tmp)
-	}
-
-	var zeroVal *ent.UserWhereInput
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_User_todos_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1597,10 +1456,6 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_moderatorUsers(ctx, field)
 			case "moderators":
 				return ec.fieldContext_User_moderators(ctx, field)
-			case "peoplePartnerUsers":
-				return ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-			case "peoplePartner":
-				return ec.fieldContext_User_peoplePartner(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2829,10 +2684,6 @@ func (ec *executionContext) fieldContext_Todo_owner(_ context.Context, field gra
 				return ec.fieldContext_User_moderatorUsers(ctx, field)
 			case "moderators":
 				return ec.fieldContext_User_moderators(ctx, field)
-			case "peoplePartnerUsers":
-				return ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-			case "peoplePartner":
-				return ec.fieldContext_User_peoplePartner(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3395,130 +3246,6 @@ func (ec *executionContext) fieldContext_User_moderators(_ context.Context, fiel
 				return ec.fieldContext_User_moderatorUsers(ctx, field)
 			case "moderators":
 				return ec.fieldContext_User_moderators(ctx, field)
-			case "peoplePartnerUsers":
-				return ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-			case "peoplePartner":
-				return ec.fieldContext_User_peoplePartner(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_peoplePartnerUsers(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PeoplePartnerUsers(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["where"].(*ent.UserWhereInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.UserConnection)
-	fc.Result = res
-	return ec.marshalNUserConnection2ᚖexampleᚋinternalᚋentᚐUserConnection(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_peoplePartnerUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "edges":
-				return ec.fieldContext_UserConnection_edges(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_UserConnection_pageInfo(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_UserConnection_totalCount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_User_peoplePartnerUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_peoplePartner(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_peoplePartner(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PeoplePartner(ctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.User)
-	fc.Result = res
-	return ec.marshalOUser2ᚕᚖexampleᚋinternalᚋentᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_peoplePartner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "todos":
-				return ec.fieldContext_User_todos(ctx, field)
-			case "moderatorUsers":
-				return ec.fieldContext_User_moderatorUsers(ctx, field)
-			case "moderators":
-				return ec.fieldContext_User_moderators(ctx, field)
-			case "peoplePartnerUsers":
-				return ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-			case "peoplePartner":
-				return ec.fieldContext_User_peoplePartner(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3717,10 +3444,6 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_moderatorUsers(ctx, field)
 			case "moderators":
 				return ec.fieldContext_User_moderators(ctx, field)
-			case "peoplePartnerUsers":
-				return ec.fieldContext_User_peoplePartnerUsers(ctx, field)
-			case "peoplePartner":
-				return ec.fieldContext_User_peoplePartner(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -5764,7 +5487,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "todoIDs", "moderatorUserIDs", "moderatorIDs", "peoplePartnerUserIDs", "peoplePartnerIDs"}
+	fieldsInOrder := [...]string{"name", "todoIDs", "moderatorUserIDs", "moderatorIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5799,20 +5522,6 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.ModeratorIDs = data
-		case "peoplePartnerUserIDs":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("peoplePartnerUserIDs"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PeoplePartnerUserIDs = data
-		case "peoplePartnerIDs":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("peoplePartnerIDs"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PeoplePartnerIDs = data
 		}
 	}
 
@@ -6401,7 +6110,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasTodos", "hasTodosWith", "hasModeratorUsers", "hasModeratorUsersWith", "hasModerators", "hasModeratorsWith", "hasPeoplePartnerUsers", "hasPeoplePartnerUsersWith", "hasPeoplePartner", "hasPeoplePartnerWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasTodos", "hasTodosWith", "hasModeratorUsers", "hasModeratorUsersWith", "hasModerators", "hasModeratorsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6618,34 +6327,6 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasModeratorsWith = data
-		case "hasPeoplePartnerUsers":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPeoplePartnerUsers"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasPeoplePartnerUsers = data
-		case "hasPeoplePartnerUsersWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPeoplePartnerUsersWith"))
-			data, err := ec.unmarshalOUserWhereInput2ᚕᚖexampleᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasPeoplePartnerUsersWith = data
-		case "hasPeoplePartner":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPeoplePartner"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasPeoplePartner = data
-		case "hasPeoplePartnerWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPeoplePartnerWith"))
-			data, err := ec.unmarshalOUserWhereInput2ᚕᚖexampleᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasPeoplePartnerWith = data
 		}
 	}
 
@@ -7387,75 +7068,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_moderators(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "peoplePartnerUsers":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_peoplePartnerUsers(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "peoplePartner":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_peoplePartner(ctx, field, obj)
 				return res
 			}
 
