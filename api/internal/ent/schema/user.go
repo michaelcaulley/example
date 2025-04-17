@@ -23,6 +23,10 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("todos", Todo.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("moderators", User.Type).
+			Through("moderator", Moderator.Type).
+			From("moderator_users").
+			Annotations(entgql.RelayConnection()),
 	}
 }
 
