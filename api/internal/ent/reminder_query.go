@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // ReminderQuery is the builder for querying Reminder entities.
@@ -83,6 +85,9 @@ func (_q *ReminderQuery) QueryTodo() *TodoQuery {
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, reminder.TodoTable, reminder.TodoPrimaryKey...),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -105,6 +110,9 @@ func (_q *ReminderQuery) QueryTodoReminders() *TodoReminderQuery {
 			sqlgraph.To(todoreminder.Table, todoreminder.ReminderColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, reminder.TodoRemindersTable, reminder.TodoRemindersColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -426,6 +434,8 @@ func (_q *ReminderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Rem
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	_spec.Node.Schema = _q.schemaConfig.Reminder
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -487,6 +497,7 @@ func (_q *ReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nodes [
 	}
 	query.Where(func(s *sql.Selector) {
 		joinT := sql.Table(reminder.TodoTable)
+		joinT.Schema(_q.schemaConfig.TodoReminder)
 		s.Join(joinT).On(s.C(todo.FieldID), joinT.C(reminder.TodoPrimaryKey[0]))
 		s.Where(sql.InValues(joinT.C(reminder.TodoPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
@@ -568,6 +579,8 @@ func (_q *ReminderQuery) loadTodoReminders(ctx context.Context, query *TodoRemin
 
 func (_q *ReminderQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
+	_spec.Node.Schema = _q.schemaConfig.Reminder
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -633,6 +646,9 @@ func (_q *ReminderQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
+	t1.Schema(_q.schemaConfig.Reminder)
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
+	selector.WithContext(ctx)
 	for _, m := range _q.modifiers {
 		m(selector)
 	}

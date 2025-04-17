@@ -113,6 +113,7 @@ func (_c *ReminderCreate) createSpec() (*Reminder, *sqlgraph.CreateSpec) {
 		_node = &Reminder{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(reminder.Table, sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt))
 	)
+	_spec.Schema = _c.schemaConfig.Reminder
 	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(reminder.FieldCreatedAt, field.TypeTime, value)
@@ -133,6 +134,7 @@ func (_c *ReminderCreate) createSpec() (*Reminder, *sqlgraph.CreateSpec) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _c.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
