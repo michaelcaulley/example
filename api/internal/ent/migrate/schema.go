@@ -138,6 +138,7 @@ func init() {
 	ModeratorsTable.ForeignKeys[0].RefTable = UsersTable
 	ModeratorsTable.ForeignKeys[1].RefTable = UsersTable
 	ModeratorsTable.Annotation = &entsql.Annotation{
+		Table:          "moderators",
 		IncrementStart: func(i int) *int { return &i }(17179869184),
 	}
 	RemindersTable.Annotation = &entsql.Annotation{
@@ -146,14 +147,17 @@ func init() {
 	}
 	TodosTable.ForeignKeys[0].RefTable = UsersTable
 	TodosTable.Annotation = &entsql.Annotation{
+		Table:          "todos",
 		IncrementStart: func(i int) *int { return &i }(4294967296),
 	}
 	TodoRemindersTable.ForeignKeys[0].RefTable = TodosTable
 	TodoRemindersTable.ForeignKeys[1].RefTable = RemindersTable
 	TodoRemindersTable.Annotation = &entsql.Annotation{
+		Table:          "todo_reminders",
 		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}
 	UsersTable.Annotation = &entsql.Annotation{
+		Table:          "users",
 		IncrementStart: func(i int) *int { return &i }(0),
 	}
 }

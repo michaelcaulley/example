@@ -32,10 +32,11 @@ func (User) Edges() []ent.Edge {
 
 func (User) Annotations() []schema.Annotation {
 	return []schema.Annotation{
+		// entsql.Schema("user"),
+		entsql.Table("users"),
 		entgql.RelayConnection(),
 		entgql.QueryField(),
 		entgql.Mutations(entgql.MutationCreate()),
 		entsql.WithComments(true),
-		// entsql.Schema("user"),
 	}
 }
