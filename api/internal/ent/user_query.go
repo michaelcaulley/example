@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"database/sql/driver"
+	"example/internal/ent/moderator"
 	"example/internal/ent/predicate"
 	"example/internal/ent/todo"
 	"example/internal/ent/user"
@@ -20,14 +21,20 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx            *QueryContext
-	order          []user.OrderOption
-	inters         []Interceptor
-	predicates     []predicate.User
-	withTodos      *TodoQuery
-	loadTotal      []func(context.Context, []*User) error
-	modifiers      []func(*sql.Selector)
-	withNamedTodos map[string]*TodoQuery
+	ctx                     *QueryContext
+	order                   []user.OrderOption
+	inters                  []Interceptor
+	predicates              []predicate.User
+	withTodos               *TodoQuery
+	withModeratorUsers      *UserQuery
+	withModerators          *UserQuery
+	withModerator           *ModeratorQuery
+	loadTotal               []func(context.Context, []*User) error
+	modifiers               []func(*sql.Selector)
+	withNamedTodos          map[string]*TodoQuery
+	withNamedModeratorUsers map[string]*UserQuery
+	withNamedModerators     map[string]*UserQuery
+	withNamedModerator      map[string]*ModeratorQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,6 +86,72 @@ func (_q *UserQuery) QueryTodos() *TodoQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryModeratorUsers chains the current query on the "moderator_users" edge.
+func (_q *UserQuery) QueryModeratorUsers() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.ModeratorUsersTable, user.ModeratorUsersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryModerators chains the current query on the "moderators" edge.
+func (_q *UserQuery) QueryModerators() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.ModeratorsTable, user.ModeratorsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryModerator chains the current query on the "moderator" edge.
+func (_q *UserQuery) QueryModerator() *ModeratorQuery {
+	query := (&ModeratorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(moderator.Table, moderator.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ModeratorTable, user.ModeratorColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -273,12 +346,15 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]user.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.User{}, _q.predicates...),
-		withTodos:  _q.withTodos.Clone(),
+		config:             _q.config,
+		ctx:                _q.ctx.Clone(),
+		order:              append([]user.OrderOption{}, _q.order...),
+		inters:             append([]Interceptor{}, _q.inters...),
+		predicates:         append([]predicate.User{}, _q.predicates...),
+		withTodos:          _q.withTodos.Clone(),
+		withModeratorUsers: _q.withModeratorUsers.Clone(),
+		withModerators:     _q.withModerators.Clone(),
+		withModerator:      _q.withModerator.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -294,6 +370,39 @@ func (_q *UserQuery) WithTodos(opts ...func(*TodoQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withTodos = query
+	return _q
+}
+
+// WithModeratorUsers tells the query-builder to eager-load the nodes that are connected to
+// the "moderator_users" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithModeratorUsers(opts ...func(*UserQuery)) *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withModeratorUsers = query
+	return _q
+}
+
+// WithModerators tells the query-builder to eager-load the nodes that are connected to
+// the "moderators" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithModerators(opts ...func(*UserQuery)) *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withModerators = query
+	return _q
+}
+
+// WithModerator tells the query-builder to eager-load the nodes that are connected to
+// the "moderator" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithModerator(opts ...func(*ModeratorQuery)) *UserQuery {
+	query := (&ModeratorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withModerator = query
 	return _q
 }
 
@@ -375,8 +484,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [4]bool{
 			_q.withTodos != nil,
+			_q.withModeratorUsers != nil,
+			_q.withModerators != nil,
+			_q.withModerator != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -407,10 +519,52 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withModeratorUsers; query != nil {
+		if err := _q.loadModeratorUsers(ctx, query, nodes,
+			func(n *User) { n.Edges.ModeratorUsers = []*User{} },
+			func(n *User, e *User) { n.Edges.ModeratorUsers = append(n.Edges.ModeratorUsers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withModerators; query != nil {
+		if err := _q.loadModerators(ctx, query, nodes,
+			func(n *User) { n.Edges.Moderators = []*User{} },
+			func(n *User, e *User) { n.Edges.Moderators = append(n.Edges.Moderators, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withModerator; query != nil {
+		if err := _q.loadModerator(ctx, query, nodes,
+			func(n *User) { n.Edges.Moderator = []*Moderator{} },
+			func(n *User, e *Moderator) { n.Edges.Moderator = append(n.Edges.Moderator, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedTodos {
 		if err := _q.loadTodos(ctx, query, nodes,
 			func(n *User) { n.appendNamedTodos(name) },
 			func(n *User, e *Todo) { n.appendNamedTodos(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedModeratorUsers {
+		if err := _q.loadModeratorUsers(ctx, query, nodes,
+			func(n *User) { n.appendNamedModeratorUsers(name) },
+			func(n *User, e *User) { n.appendNamedModeratorUsers(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedModerators {
+		if err := _q.loadModerators(ctx, query, nodes,
+			func(n *User) { n.appendNamedModerators(name) },
+			func(n *User, e *User) { n.appendNamedModerators(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedModerator {
+		if err := _q.loadModerator(ctx, query, nodes,
+			func(n *User) { n.appendNamedModerator(name) },
+			func(n *User, e *Moderator) { n.appendNamedModerator(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -447,6 +601,158 @@ func (_q *UserQuery) loadTodos(ctx context.Context, query *TodoQuery, nodes []*U
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "owner_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadModeratorUsers(ctx context.Context, query *UserQuery, nodes []*User, init func(*User), assign func(*User, *User)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*User)
+	nids := make(map[int]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.ModeratorUsersTable)
+		s.Join(joinT).On(s.C(user.FieldID), joinT.C(user.ModeratorUsersPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(user.ModeratorUsersPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.ModeratorUsersPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*User]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "moderator_users" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (_q *UserQuery) loadModerators(ctx context.Context, query *UserQuery, nodes []*User, init func(*User), assign func(*User, *User)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*User)
+	nids := make(map[int]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.ModeratorsTable)
+		s.Join(joinT).On(s.C(user.FieldID), joinT.C(user.ModeratorsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(user.ModeratorsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.ModeratorsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*User]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "moderators" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (_q *UserQuery) loadModerator(ctx context.Context, query *ModeratorQuery, nodes []*User, init func(*User), assign func(*User, *Moderator)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(moderator.FieldUserID)
+	}
+	query.Where(predicate.Moderator(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ModeratorColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n)
 		}
 		assign(node, n)
 	}
@@ -557,6 +863,48 @@ func (_q *UserQuery) WithNamedTodos(name string, opts ...func(*TodoQuery)) *User
 		_q.withNamedTodos = make(map[string]*TodoQuery)
 	}
 	_q.withNamedTodos[name] = query
+	return _q
+}
+
+// WithNamedModeratorUsers tells the query-builder to eager-load the nodes that are connected to the "moderator_users"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedModeratorUsers(name string, opts ...func(*UserQuery)) *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedModeratorUsers == nil {
+		_q.withNamedModeratorUsers = make(map[string]*UserQuery)
+	}
+	_q.withNamedModeratorUsers[name] = query
+	return _q
+}
+
+// WithNamedModerators tells the query-builder to eager-load the nodes that are connected to the "moderators"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedModerators(name string, opts ...func(*UserQuery)) *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedModerators == nil {
+		_q.withNamedModerators = make(map[string]*UserQuery)
+	}
+	_q.withNamedModerators[name] = query
+	return _q
+}
+
+// WithNamedModerator tells the query-builder to eager-load the nodes that are connected to the "moderator"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedModerator(name string, opts ...func(*ModeratorQuery)) *UserQuery {
+	query := (&ModeratorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedModerator == nil {
+		_q.withNamedModerator = make(map[string]*ModeratorQuery)
+	}
+	_q.withNamedModerator[name] = query
 	return _q
 }
 

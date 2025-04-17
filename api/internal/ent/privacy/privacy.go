@@ -111,6 +111,30 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The ModeratorQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ModeratorQueryRuleFunc func(context.Context, *ent.ModeratorQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ModeratorQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ModeratorQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ModeratorQuery", q)
+}
+
+// The ModeratorMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ModeratorMutationRuleFunc func(context.Context, *ent.ModeratorMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ModeratorMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ModeratorMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ModeratorMutation", m)
+}
+
 // The ReminderQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ReminderQueryRuleFunc func(context.Context, *ent.ReminderQuery) error
@@ -242,6 +266,8 @@ var _ QueryMutationRule = FilterFunc(nil)
 
 func queryFilter(q ent.Query) (Filter, error) {
 	switch q := q.(type) {
+	case *ent.ModeratorQuery:
+		return q.Filter(), nil
 	case *ent.ReminderQuery:
 		return q.Filter(), nil
 	case *ent.TodoQuery:
@@ -257,6 +283,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 
 func mutationFilter(m ent.Mutation) (Filter, error) {
 	switch m := m.(type) {
+	case *ent.ModeratorMutation:
+		return m.Filter(), nil
 	case *ent.ReminderMutation:
 		return m.Filter(), nil
 	case *ent.TodoMutation:

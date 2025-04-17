@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"errors"
+	"example/internal/ent/moderator"
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
@@ -27,11 +28,407 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeModerator    = "Moderator"
 	TypeReminder     = "Reminder"
 	TypeTodo         = "Todo"
 	TypeTodoReminder = "TodoReminder"
 	TypeUser         = "User"
 )
+
+// ModeratorMutation represents an operation that mutates the Moderator nodes in the graph.
+type ModeratorMutation struct {
+	config
+	op               Op
+	typ              string
+	clearedFields    map[string]struct{}
+	user             *int
+	cleareduser      bool
+	moderator        *int
+	clearedmoderator bool
+	done             bool
+	oldValue         func(context.Context) (*Moderator, error)
+	predicates       []predicate.Moderator
+}
+
+var _ ent.Mutation = (*ModeratorMutation)(nil)
+
+// moderatorOption allows management of the mutation configuration using functional options.
+type moderatorOption func(*ModeratorMutation)
+
+// newModeratorMutation creates new mutation for the Moderator entity.
+func newModeratorMutation(c config, op Op, opts ...moderatorOption) *ModeratorMutation {
+	m := &ModeratorMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeModerator,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ModeratorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ModeratorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *ModeratorMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *ModeratorMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *ModeratorMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetModeratorUserID sets the "moderator_user_id" field.
+func (m *ModeratorMutation) SetModeratorUserID(i int) {
+	m.moderator = &i
+}
+
+// ModeratorUserID returns the value of the "moderator_user_id" field in the mutation.
+func (m *ModeratorMutation) ModeratorUserID() (r int, exists bool) {
+	v := m.moderator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetModeratorUserID resets all changes to the "moderator_user_id" field.
+func (m *ModeratorMutation) ResetModeratorUserID() {
+	m.moderator = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ModeratorMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[moderator.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ModeratorMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ModeratorMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ModeratorMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetModeratorID sets the "moderator" edge to the User entity by id.
+func (m *ModeratorMutation) SetModeratorID(id int) {
+	m.moderator = &id
+}
+
+// ClearModerator clears the "moderator" edge to the User entity.
+func (m *ModeratorMutation) ClearModerator() {
+	m.clearedmoderator = true
+	m.clearedFields[moderator.FieldModeratorUserID] = struct{}{}
+}
+
+// ModeratorCleared reports if the "moderator" edge to the User entity was cleared.
+func (m *ModeratorMutation) ModeratorCleared() bool {
+	return m.clearedmoderator
+}
+
+// ModeratorID returns the "moderator" edge ID in the mutation.
+func (m *ModeratorMutation) ModeratorID() (id int, exists bool) {
+	if m.moderator != nil {
+		return *m.moderator, true
+	}
+	return
+}
+
+// ModeratorIDs returns the "moderator" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ModeratorID instead. It exists only for internal usage by the builders.
+func (m *ModeratorMutation) ModeratorIDs() (ids []int) {
+	if id := m.moderator; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetModerator resets all changes to the "moderator" edge.
+func (m *ModeratorMutation) ResetModerator() {
+	m.moderator = nil
+	m.clearedmoderator = false
+}
+
+// Where appends a list predicates to the ModeratorMutation builder.
+func (m *ModeratorMutation) Where(ps ...predicate.Moderator) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ModeratorMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ModeratorMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Moderator, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ModeratorMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ModeratorMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Moderator).
+func (m *ModeratorMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ModeratorMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.user != nil {
+		fields = append(fields, moderator.FieldUserID)
+	}
+	if m.moderator != nil {
+		fields = append(fields, moderator.FieldModeratorUserID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ModeratorMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case moderator.FieldUserID:
+		return m.UserID()
+	case moderator.FieldModeratorUserID:
+		return m.ModeratorUserID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ModeratorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, errors.New("edge schema Moderator does not support getting old values")
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ModeratorMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case moderator.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case moderator.FieldModeratorUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModeratorUserID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Moderator field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ModeratorMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ModeratorMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ModeratorMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Moderator numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ModeratorMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ModeratorMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ModeratorMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Moderator nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ModeratorMutation) ResetField(name string) error {
+	switch name {
+	case moderator.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case moderator.FieldModeratorUserID:
+		m.ResetModeratorUserID()
+		return nil
+	}
+	return fmt.Errorf("unknown Moderator field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ModeratorMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, moderator.EdgeUser)
+	}
+	if m.moderator != nil {
+		edges = append(edges, moderator.EdgeModerator)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ModeratorMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case moderator.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case moderator.EdgeModerator:
+		if id := m.moderator; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ModeratorMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ModeratorMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ModeratorMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, moderator.EdgeUser)
+	}
+	if m.clearedmoderator {
+		edges = append(edges, moderator.EdgeModerator)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ModeratorMutation) EdgeCleared(name string) bool {
+	switch name {
+	case moderator.EdgeUser:
+		return m.cleareduser
+	case moderator.EdgeModerator:
+		return m.clearedmoderator
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ModeratorMutation) ClearEdge(name string) error {
+	switch name {
+	case moderator.EdgeUser:
+		m.ClearUser()
+		return nil
+	case moderator.EdgeModerator:
+		m.ClearModerator()
+		return nil
+	}
+	return fmt.Errorf("unknown Moderator unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ModeratorMutation) ResetEdge(name string) error {
+	switch name {
+	case moderator.EdgeUser:
+		m.ResetUser()
+		return nil
+	case moderator.EdgeModerator:
+		m.ResetModerator()
+		return nil
+	}
+	return fmt.Errorf("unknown Moderator edge %s", name)
+}
 
 // ReminderMutation represents an operation that mutates the Reminder nodes in the graph.
 type ReminderMutation struct {
@@ -1489,17 +1886,23 @@ func (m *TodoReminderMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	clearedFields map[string]struct{}
-	todos         map[int]struct{}
-	removedtodos  map[int]struct{}
-	clearedtodos  bool
-	done          bool
-	oldValue      func(context.Context) (*User, error)
-	predicates    []predicate.User
+	op                     Op
+	typ                    string
+	id                     *int
+	name                   *string
+	clearedFields          map[string]struct{}
+	todos                  map[int]struct{}
+	removedtodos           map[int]struct{}
+	clearedtodos           bool
+	moderator_users        map[int]struct{}
+	removedmoderator_users map[int]struct{}
+	clearedmoderator_users bool
+	moderators             map[int]struct{}
+	removedmoderators      map[int]struct{}
+	clearedmoderators      bool
+	done                   bool
+	oldValue               func(context.Context) (*User, error)
+	predicates             []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -1690,6 +2093,114 @@ func (m *UserMutation) ResetTodos() {
 	m.removedtodos = nil
 }
 
+// AddModeratorUserIDs adds the "moderator_users" edge to the User entity by ids.
+func (m *UserMutation) AddModeratorUserIDs(ids ...int) {
+	if m.moderator_users == nil {
+		m.moderator_users = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.moderator_users[ids[i]] = struct{}{}
+	}
+}
+
+// ClearModeratorUsers clears the "moderator_users" edge to the User entity.
+func (m *UserMutation) ClearModeratorUsers() {
+	m.clearedmoderator_users = true
+}
+
+// ModeratorUsersCleared reports if the "moderator_users" edge to the User entity was cleared.
+func (m *UserMutation) ModeratorUsersCleared() bool {
+	return m.clearedmoderator_users
+}
+
+// RemoveModeratorUserIDs removes the "moderator_users" edge to the User entity by IDs.
+func (m *UserMutation) RemoveModeratorUserIDs(ids ...int) {
+	if m.removedmoderator_users == nil {
+		m.removedmoderator_users = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.moderator_users, ids[i])
+		m.removedmoderator_users[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedModeratorUsers returns the removed IDs of the "moderator_users" edge to the User entity.
+func (m *UserMutation) RemovedModeratorUsersIDs() (ids []int) {
+	for id := range m.removedmoderator_users {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ModeratorUsersIDs returns the "moderator_users" edge IDs in the mutation.
+func (m *UserMutation) ModeratorUsersIDs() (ids []int) {
+	for id := range m.moderator_users {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetModeratorUsers resets all changes to the "moderator_users" edge.
+func (m *UserMutation) ResetModeratorUsers() {
+	m.moderator_users = nil
+	m.clearedmoderator_users = false
+	m.removedmoderator_users = nil
+}
+
+// AddModeratorIDs adds the "moderators" edge to the User entity by ids.
+func (m *UserMutation) AddModeratorIDs(ids ...int) {
+	if m.moderators == nil {
+		m.moderators = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.moderators[ids[i]] = struct{}{}
+	}
+}
+
+// ClearModerators clears the "moderators" edge to the User entity.
+func (m *UserMutation) ClearModerators() {
+	m.clearedmoderators = true
+}
+
+// ModeratorsCleared reports if the "moderators" edge to the User entity was cleared.
+func (m *UserMutation) ModeratorsCleared() bool {
+	return m.clearedmoderators
+}
+
+// RemoveModeratorIDs removes the "moderators" edge to the User entity by IDs.
+func (m *UserMutation) RemoveModeratorIDs(ids ...int) {
+	if m.removedmoderators == nil {
+		m.removedmoderators = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.moderators, ids[i])
+		m.removedmoderators[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedModerators returns the removed IDs of the "moderators" edge to the User entity.
+func (m *UserMutation) RemovedModeratorsIDs() (ids []int) {
+	for id := range m.removedmoderators {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ModeratorsIDs returns the "moderators" edge IDs in the mutation.
+func (m *UserMutation) ModeratorsIDs() (ids []int) {
+	for id := range m.moderators {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetModerators resets all changes to the "moderators" edge.
+func (m *UserMutation) ResetModerators() {
+	m.moderators = nil
+	m.clearedmoderators = false
+	m.removedmoderators = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -1823,9 +2334,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.todos != nil {
 		edges = append(edges, user.EdgeTodos)
+	}
+	if m.moderator_users != nil {
+		edges = append(edges, user.EdgeModeratorUsers)
+	}
+	if m.moderators != nil {
+		edges = append(edges, user.EdgeModerators)
 	}
 	return edges
 }
@@ -1840,15 +2357,33 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeModeratorUsers:
+		ids := make([]ent.Value, 0, len(m.moderator_users))
+		for id := range m.moderator_users {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeModerators:
+		ids := make([]ent.Value, 0, len(m.moderators))
+		for id := range m.moderators {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.removedtodos != nil {
 		edges = append(edges, user.EdgeTodos)
+	}
+	if m.removedmoderator_users != nil {
+		edges = append(edges, user.EdgeModeratorUsers)
+	}
+	if m.removedmoderators != nil {
+		edges = append(edges, user.EdgeModerators)
 	}
 	return edges
 }
@@ -1863,15 +2398,33 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeModeratorUsers:
+		ids := make([]ent.Value, 0, len(m.removedmoderator_users))
+		for id := range m.removedmoderator_users {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeModerators:
+		ids := make([]ent.Value, 0, len(m.removedmoderators))
+		for id := range m.removedmoderators {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.clearedtodos {
 		edges = append(edges, user.EdgeTodos)
+	}
+	if m.clearedmoderator_users {
+		edges = append(edges, user.EdgeModeratorUsers)
+	}
+	if m.clearedmoderators {
+		edges = append(edges, user.EdgeModerators)
 	}
 	return edges
 }
@@ -1882,6 +2435,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
 	case user.EdgeTodos:
 		return m.clearedtodos
+	case user.EdgeModeratorUsers:
+		return m.clearedmoderator_users
+	case user.EdgeModerators:
+		return m.clearedmoderators
 	}
 	return false
 }
@@ -1900,6 +2457,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
 	case user.EdgeTodos:
 		m.ResetTodos()
+		return nil
+	case user.EdgeModeratorUsers:
+		m.ResetModeratorUsers()
+		return nil
+	case user.EdgeModerators:
+		m.ResetModerators()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -2,4 +2,4 @@
 
 package internal
 
-const IncrementStarts = "{\"reminders\":8589934592,\"todo_reminders\":12884901888,\"todos\":4294967296,\"users\":0}"
+const IncrementStarts = "{\"moderators\":17179869184,\"reminders\":8589934592,\"todo_reminders\":12884901888,\"todos\":4294967296,\"users\":0}"
