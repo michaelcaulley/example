@@ -39,6 +39,9 @@ services:
     volumes:
       - ./db/migrations:/workspace/migrations
       - ./api:/workspace
+      - ./db:/workspace/db:ro
+      - ./db/atlas.hcl/:/workspace/atlas.hcl:ro
+      - ~/.atlas:/root/.atlas
     depends_on:
       atlas-db:
         condition: service_healthy

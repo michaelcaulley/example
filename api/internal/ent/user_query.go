@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -87,6 +89,9 @@ func (_q *UserQuery) QueryTodos() *TodoQuery {
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.Todo
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -109,6 +114,9 @@ func (_q *UserQuery) QueryModeratorUsers() *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, user.ModeratorUsersTable, user.ModeratorUsersPrimaryKey...),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserModerators
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -131,6 +139,9 @@ func (_q *UserQuery) QueryModerators() *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.ModeratorsTable, user.ModeratorsPrimaryKey...),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -153,6 +164,9 @@ func (_q *UserQuery) QueryModerator() *ModeratorQuery {
 			sqlgraph.To(moderator.Table, moderator.UserColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.ModeratorTable, user.ModeratorColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.Moderator
+		step.Edge.Schema = schemaConfig.Moderator
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -500,6 +514,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	_spec.Node.Schema = _q.schemaConfig.User
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -619,6 +635,7 @@ func (_q *UserQuery) loadModeratorUsers(ctx context.Context, query *UserQuery, n
 	}
 	query.Where(func(s *sql.Selector) {
 		joinT := sql.Table(user.ModeratorUsersTable)
+		joinT.Schema(_q.schemaConfig.UserModerators)
 		s.Join(joinT).On(s.C(user.FieldID), joinT.C(user.ModeratorUsersPrimaryKey[0]))
 		s.Where(sql.InValues(joinT.C(user.ModeratorUsersPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
@@ -680,6 +697,7 @@ func (_q *UserQuery) loadModerators(ctx context.Context, query *UserQuery, nodes
 	}
 	query.Where(func(s *sql.Selector) {
 		joinT := sql.Table(user.ModeratorsTable)
+		joinT.Schema(_q.schemaConfig.Moderator)
 		s.Join(joinT).On(s.C(user.FieldID), joinT.C(user.ModeratorsPrimaryKey[1]))
 		s.Where(sql.InValues(joinT.C(user.ModeratorsPrimaryKey[0]), edgeIDs...))
 		columns := s.SelectedColumns()
@@ -761,6 +779,8 @@ func (_q *UserQuery) loadModerator(ctx context.Context, query *ModeratorQuery, n
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
+	_spec.Node.Schema = _q.schemaConfig.User
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -826,6 +846,9 @@ func (_q *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
+	t1.Schema(_q.schemaConfig.User)
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
+	selector.WithContext(ctx)
 	for _, m := range _q.modifiers {
 		m(selector)
 	}
@@ -915,41 +938,41 @@ type UserGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (ugb *UserGroupBy) Aggregate(fns ...AggregateFunc) *UserGroupBy {
-	ugb.fns = append(ugb.fns, fns...)
-	return ugb
+func (_g *UserGroupBy) Aggregate(fns ...AggregateFunc) *UserGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ugb *UserGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ugb.build.ctx, ent.OpQueryGroupBy)
-	if err := ugb.build.prepareQuery(ctx); err != nil {
+func (_g *UserGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*UserQuery, *UserGroupBy](ctx, ugb.build, ugb, ugb.build.inters, v)
+	return scanWithInterceptors[*UserQuery, *UserGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (ugb *UserGroupBy) sqlScan(ctx context.Context, root *UserQuery, v any) error {
+func (_g *UserGroupBy) sqlScan(ctx context.Context, root *UserQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(ugb.fns))
-	for _, fn := range ugb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*ugb.flds)+len(ugb.fns))
-		for _, f := range *ugb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*ugb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ugb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -963,27 +986,27 @@ type UserSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (us *UserSelect) Aggregate(fns ...AggregateFunc) *UserSelect {
-	us.fns = append(us.fns, fns...)
-	return us
+func (_s *UserSelect) Aggregate(fns ...AggregateFunc) *UserSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (us *UserSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, us.ctx, ent.OpQuerySelect)
-	if err := us.prepareQuery(ctx); err != nil {
+func (_s *UserSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*UserQuery, *UserSelect](ctx, us.UserQuery, us, us.inters, v)
+	return scanWithInterceptors[*UserQuery, *UserSelect](ctx, _s.UserQuery, _s, _s.inters, v)
 }
 
-func (us *UserSelect) sqlScan(ctx context.Context, root *UserQuery, v any) error {
+func (_s *UserSelect) sqlScan(ctx context.Context, root *UserQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(us.fns))
-	for _, fn := range us.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*us.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -991,7 +1014,7 @@ func (us *UserSelect) sqlScan(ctx context.Context, root *UserQuery, v any) error
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := us.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -999,7 +1022,7 @@ func (us *UserSelect) sqlScan(ctx context.Context, root *UserQuery, v any) error
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (us *UserSelect) Modify(modifiers ...func(s *sql.Selector)) *UserSelect {
-	us.modifiers = append(us.modifiers, modifiers...)
-	return us
+func (_s *UserSelect) Modify(modifiers ...func(s *sql.Selector)) *UserSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

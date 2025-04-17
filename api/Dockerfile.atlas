@@ -8,7 +8,7 @@ RUN apk add --no-cache \
 WORKDIR /workspace
 
 # Install Atlas CLI
-RUN curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.32.0 sh
+RUN curl -sSf https://atlasgo.sh | ATLAS_VERSION=v0.34.0 sh
 
 # Verify installations
 RUN atlas version

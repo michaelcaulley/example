@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type User struct {
@@ -30,9 +31,19 @@ func (User) Edges() []ent.Edge {
 	}
 }
 
+func (User) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").
+			Annotations(
+				entsql.IndexType("GIN"),
+				entsql.OpClass("gin_trgm_ops"),
+			),
+	}
+}
+
 func (User) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		// entsql.Schema("app"),
+		entsql.Schema("app"),
 		entsql.Table("users"),
 		entgql.RelayConnection(),
 		entgql.QueryField(),

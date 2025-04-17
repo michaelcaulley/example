@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // ReminderQuery is the builder for querying Reminder entities.
@@ -83,6 +85,9 @@ func (_q *ReminderQuery) QueryTodo() *TodoQuery {
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, reminder.TodoTable, reminder.TodoPrimaryKey...),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -105,6 +110,9 @@ func (_q *ReminderQuery) QueryTodoReminders() *TodoReminderQuery {
 			sqlgraph.To(todoreminder.Table, todoreminder.ReminderColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, reminder.TodoRemindersTable, reminder.TodoRemindersColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -426,6 +434,8 @@ func (_q *ReminderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Rem
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	_spec.Node.Schema = _q.schemaConfig.Reminder
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -487,6 +497,7 @@ func (_q *ReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nodes [
 	}
 	query.Where(func(s *sql.Selector) {
 		joinT := sql.Table(reminder.TodoTable)
+		joinT.Schema(_q.schemaConfig.TodoReminder)
 		s.Join(joinT).On(s.C(todo.FieldID), joinT.C(reminder.TodoPrimaryKey[0]))
 		s.Where(sql.InValues(joinT.C(reminder.TodoPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
@@ -568,6 +579,8 @@ func (_q *ReminderQuery) loadTodoReminders(ctx context.Context, query *TodoRemin
 
 func (_q *ReminderQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
+	_spec.Node.Schema = _q.schemaConfig.Reminder
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -633,6 +646,9 @@ func (_q *ReminderQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
+	t1.Schema(_q.schemaConfig.Reminder)
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
+	selector.WithContext(ctx)
 	for _, m := range _q.modifiers {
 		m(selector)
 	}
@@ -694,41 +710,41 @@ type ReminderGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (rgb *ReminderGroupBy) Aggregate(fns ...AggregateFunc) *ReminderGroupBy {
-	rgb.fns = append(rgb.fns, fns...)
-	return rgb
+func (_g *ReminderGroupBy) Aggregate(fns ...AggregateFunc) *ReminderGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (rgb *ReminderGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rgb.build.ctx, ent.OpQueryGroupBy)
-	if err := rgb.build.prepareQuery(ctx); err != nil {
+func (_g *ReminderGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ReminderQuery, *ReminderGroupBy](ctx, rgb.build, rgb, rgb.build.inters, v)
+	return scanWithInterceptors[*ReminderQuery, *ReminderGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (rgb *ReminderGroupBy) sqlScan(ctx context.Context, root *ReminderQuery, v any) error {
+func (_g *ReminderGroupBy) sqlScan(ctx context.Context, root *ReminderQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(rgb.fns))
-	for _, fn := range rgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*rgb.flds)+len(rgb.fns))
-		for _, f := range *rgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*rgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := rgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -742,27 +758,27 @@ type ReminderSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (rs *ReminderSelect) Aggregate(fns ...AggregateFunc) *ReminderSelect {
-	rs.fns = append(rs.fns, fns...)
-	return rs
+func (_s *ReminderSelect) Aggregate(fns ...AggregateFunc) *ReminderSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (rs *ReminderSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rs.ctx, ent.OpQuerySelect)
-	if err := rs.prepareQuery(ctx); err != nil {
+func (_s *ReminderSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ReminderQuery, *ReminderSelect](ctx, rs.ReminderQuery, rs, rs.inters, v)
+	return scanWithInterceptors[*ReminderQuery, *ReminderSelect](ctx, _s.ReminderQuery, _s, _s.inters, v)
 }
 
-func (rs *ReminderSelect) sqlScan(ctx context.Context, root *ReminderQuery, v any) error {
+func (_s *ReminderSelect) sqlScan(ctx context.Context, root *ReminderQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(rs.fns))
-	for _, fn := range rs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*rs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -770,7 +786,7 @@ func (rs *ReminderSelect) sqlScan(ctx context.Context, root *ReminderQuery, v an
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := rs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -778,7 +794,7 @@ func (rs *ReminderSelect) sqlScan(ctx context.Context, root *ReminderQuery, v an
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (rs *ReminderSelect) Modify(modifiers ...func(s *sql.Selector)) *ReminderSelect {
-	rs.modifiers = append(rs.modifiers, modifiers...)
-	return rs
+func (_s *ReminderSelect) Modify(modifiers ...func(s *sql.Selector)) *ReminderSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

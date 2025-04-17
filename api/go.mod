@@ -57,4 +57,4 @@ require (
 
 replace entgo.io/contrib => github.com/ent/contrib v0.6.1-0.20250319063240-8a7f182943cb
 
-replace entgo.io/ent => github.com/ent/ent v0.14.5-0.20250408124403-b1786895ce97
+replace entgo.io/ent => github.com/ent/ent v0.14.5-0.20250620081159-ace82484b8f8
