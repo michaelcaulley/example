@@ -1,10 +1,10 @@
 package schema
 
 import (
-	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 )
 
 type Reminder struct {
@@ -24,7 +24,12 @@ func (Reminder) Fields() []ent.Field {
 
 // Edges of the Reminder.
 func (Reminder) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.From("todo", Todo.Type).
+			Ref("reminders").
+			Through("todo_reminders", TodoReminder.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+	}
 }
 
 func (Reminder) Indexes() []ent.Index {
@@ -34,8 +39,8 @@ func (Reminder) Indexes() []ent.Index {
 // Annotations of the Reminder.
 func (Reminder) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.RelayConnection(),
-		entgql.QueryField(),
+		entsql.Table("reminders"),
+		schema.Comment("Reminder for a user to take action."),
 		entsql.WithComments(true),
 		// entsql.Schema("todo"),
 	}

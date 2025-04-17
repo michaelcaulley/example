@@ -48,6 +48,10 @@ type ReminderWhereInput struct {
 	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
 	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
 	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "todo" edge predicates.
+	HasTodo     *bool             `json:"hasTodo,omitempty"`
+	HasTodoWith []*TodoWhereInput `json:"hasTodoWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -194,6 +198,24 @@ func (i *ReminderWhereInput) P() (predicate.Reminder, error) {
 		predicates = append(predicates, reminder.UpdatedAtLTE(*i.UpdatedAtLTE))
 	}
 
+	if i.HasTodo != nil {
+		p := reminder.HasTodo()
+		if !*i.HasTodo {
+			p = reminder.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTodoWith) > 0 {
+		with := make([]predicate.Todo, 0, len(i.HasTodoWith))
+		for _, w := range i.HasTodoWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTodoWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, reminder.HasTodoWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyReminderWhereInput
@@ -257,6 +279,10 @@ type TodoWhereInput struct {
 	// "owner" edge predicates.
 	HasOwner     *bool             `json:"hasOwner,omitempty"`
 	HasOwnerWith []*UserWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "reminders" edge predicates.
+	HasReminders     *bool                 `json:"hasReminders,omitempty"`
+	HasRemindersWith []*ReminderWhereInput `json:"hasRemindersWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -453,6 +479,24 @@ func (i *TodoWhereInput) P() (predicate.Todo, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, todo.HasOwnerWith(with...))
+	}
+	if i.HasReminders != nil {
+		p := todo.HasReminders()
+		if !*i.HasReminders {
+			p = todo.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRemindersWith) > 0 {
+		with := make([]predicate.Reminder, 0, len(i.HasRemindersWith))
+		for _, w := range i.HasRemindersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRemindersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todo.HasRemindersWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

@@ -228,6 +228,52 @@ func HasOwnerWith(preds ...predicate.User) predicate.Todo {
 	})
 }
 
+// HasReminders applies the HasEdge predicate on the "reminders" edge.
+func HasReminders() predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, RemindersTable, RemindersPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRemindersWith applies the HasEdge predicate on the "reminders" edge with a given conditions (other predicates).
+func HasRemindersWith(preds ...predicate.Reminder) predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := newRemindersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTodoReminders applies the HasEdge predicate on the "todo_reminders" edge.
+func HasTodoReminders() predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TodoRemindersTable, TodoRemindersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTodoRemindersWith applies the HasEdge predicate on the "todo_reminders" edge with a given conditions (other predicates).
+func HasTodoRemindersWith(preds ...predicate.TodoReminder) predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := newTodoRemindersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Todo) predicate.Todo {
 	return predicate.Todo(sql.AndPredicates(predicates...))

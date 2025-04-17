@@ -50,6 +50,9 @@ func (Todo) Edges() []ent.Edge {
 			Annotations(
 				entgql.Skip(entgql.SkipMutationCreateInput),
 			),
+		edge.To("reminders", Reminder.Type).
+			Through("todo_reminders", TodoReminder.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

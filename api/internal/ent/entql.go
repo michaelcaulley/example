@@ -6,6 +6,7 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todoreminder"
 	"example/internal/ent/user"
 
 	"entgo.io/ent/dialect/sql"
@@ -16,7 +17,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 3)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 4)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   reminder.Table,
@@ -50,6 +51,27 @@ var schemaGraph = func() *sqlgraph.Schema {
 	}
 	graph.Nodes[2] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
+			Table:   todoreminder.Table,
+			Columns: todoreminder.Columns,
+			CompositeID: []*sqlgraph.FieldSpec{
+				{
+					Type:   field.TypeInt,
+					Column: todoreminder.FieldTodoID,
+				},
+				{
+					Type:   field.TypeInt,
+					Column: todoreminder.FieldReminderID,
+				},
+			},
+		},
+		Type: "TodoReminder",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			todoreminder.FieldTodoID:     {Type: field.TypeInt, Column: todoreminder.FieldTodoID},
+			todoreminder.FieldReminderID: {Type: field.TypeInt, Column: todoreminder.FieldReminderID},
+		},
+	}
+	graph.Nodes[3] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
@@ -63,6 +85,30 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 	}
 	graph.MustAddE(
+		"todo",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+		},
+		"Reminder",
+		"Todo",
+	)
+	graph.MustAddE(
+		"todo_reminders",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   reminder.TodoRemindersTable,
+			Columns: []string{reminder.TodoRemindersColumn},
+			Bidi:    false,
+		},
+		"Reminder",
+		"TodoReminder",
+	)
+	graph.MustAddE(
 		"owner",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -73,6 +119,54 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"Todo",
 		"User",
+	)
+	graph.MustAddE(
+		"reminders",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   todo.RemindersTable,
+			Columns: todo.RemindersPrimaryKey,
+			Bidi:    false,
+		},
+		"Todo",
+		"Reminder",
+	)
+	graph.MustAddE(
+		"todo_reminders",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.TodoRemindersTable,
+			Columns: []string{todo.TodoRemindersColumn},
+			Bidi:    false,
+		},
+		"Todo",
+		"TodoReminder",
+	)
+	graph.MustAddE(
+		"todo",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   todoreminder.TodoTable,
+			Columns: []string{todoreminder.TodoColumn},
+			Bidi:    false,
+		},
+		"TodoReminder",
+		"Todo",
+	)
+	graph.MustAddE(
+		"reminder",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   todoreminder.ReminderTable,
+			Columns: []string{todoreminder.ReminderColumn},
+			Bidi:    false,
+		},
+		"TodoReminder",
+		"Reminder",
 	)
 	graph.MustAddE(
 		"todos",
@@ -145,6 +239,34 @@ func (f *ReminderFilter) WhereUpdatedAt(p entql.TimeP) {
 	f.Where(p.Field(reminder.FieldUpdatedAt))
 }
 
+// WhereHasTodo applies a predicate to check if query has an edge todo.
+func (f *ReminderFilter) WhereHasTodo() {
+	f.Where(entql.HasEdge("todo"))
+}
+
+// WhereHasTodoWith applies a predicate to check if query has an edge todo with a given conditions (other predicates).
+func (f *ReminderFilter) WhereHasTodoWith(preds ...predicate.Todo) {
+	f.Where(entql.HasEdgeWith("todo", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasTodoReminders applies a predicate to check if query has an edge todo_reminders.
+func (f *ReminderFilter) WhereHasTodoReminders() {
+	f.Where(entql.HasEdge("todo_reminders"))
+}
+
+// WhereHasTodoRemindersWith applies a predicate to check if query has an edge todo_reminders with a given conditions (other predicates).
+func (f *ReminderFilter) WhereHasTodoRemindersWith(preds ...predicate.TodoReminder) {
+	f.Where(entql.HasEdgeWith("todo_reminders", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // addPredicate implements the predicateAdder interface.
 func (_q *TodoQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
@@ -214,6 +336,107 @@ func (f *TodoFilter) WhereHasOwnerWith(preds ...predicate.User) {
 	})))
 }
 
+// WhereHasReminders applies a predicate to check if query has an edge reminders.
+func (f *TodoFilter) WhereHasReminders() {
+	f.Where(entql.HasEdge("reminders"))
+}
+
+// WhereHasRemindersWith applies a predicate to check if query has an edge reminders with a given conditions (other predicates).
+func (f *TodoFilter) WhereHasRemindersWith(preds ...predicate.Reminder) {
+	f.Where(entql.HasEdgeWith("reminders", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasTodoReminders applies a predicate to check if query has an edge todo_reminders.
+func (f *TodoFilter) WhereHasTodoReminders() {
+	f.Where(entql.HasEdge("todo_reminders"))
+}
+
+// WhereHasTodoRemindersWith applies a predicate to check if query has an edge todo_reminders with a given conditions (other predicates).
+func (f *TodoFilter) WhereHasTodoRemindersWith(preds ...predicate.TodoReminder) {
+	f.Where(entql.HasEdgeWith("todo_reminders", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *TodoReminderQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the TodoReminderQuery builder.
+func (_q *TodoReminderQuery) Filter() *TodoReminderFilter {
+	return &TodoReminderFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *TodoReminderMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the TodoReminderMutation builder.
+func (m *TodoReminderMutation) Filter() *TodoReminderFilter {
+	return &TodoReminderFilter{config: m.config, predicateAdder: m}
+}
+
+// TodoReminderFilter provides a generic filtering capability at runtime for TodoReminderQuery.
+type TodoReminderFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *TodoReminderFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[2].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereTodoID applies the entql int predicate on the todo_id field.
+func (f *TodoReminderFilter) WhereTodoID(p entql.IntP) {
+	f.Where(p.Field(todoreminder.FieldTodoID))
+}
+
+// WhereReminderID applies the entql int predicate on the reminder_id field.
+func (f *TodoReminderFilter) WhereReminderID(p entql.IntP) {
+	f.Where(p.Field(todoreminder.FieldReminderID))
+}
+
+// WhereHasTodo applies a predicate to check if query has an edge todo.
+func (f *TodoReminderFilter) WhereHasTodo() {
+	f.Where(entql.HasEdge("todo"))
+}
+
+// WhereHasTodoWith applies a predicate to check if query has an edge todo with a given conditions (other predicates).
+func (f *TodoReminderFilter) WhereHasTodoWith(preds ...predicate.Todo) {
+	f.Where(entql.HasEdgeWith("todo", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasReminder applies a predicate to check if query has an edge reminder.
+func (f *TodoReminderFilter) WhereHasReminder() {
+	f.Where(entql.HasEdge("reminder"))
+}
+
+// WhereHasReminderWith applies a predicate to check if query has an edge reminder with a given conditions (other predicates).
+func (f *TodoReminderFilter) WhereHasReminderWith(preds ...predicate.Reminder) {
+	f.Where(entql.HasEdgeWith("reminder", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // addPredicate implements the predicateAdder interface.
 func (_q *UserQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
@@ -243,7 +466,7 @@ type UserFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[2].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[3].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})

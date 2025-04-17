@@ -13,6 +13,7 @@ import (
 
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todoreminder"
 	"example/internal/ent/user"
 
 	"entgo.io/ent"
@@ -32,6 +33,8 @@ type Client struct {
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
 	Todo *TodoClient
+	// TodoReminder is the client for interacting with the TodoReminder builders.
+	TodoReminder *TodoReminderClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -47,6 +50,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Reminder = NewReminderClient(c.config)
 	c.Todo = NewTodoClient(c.config)
+	c.TodoReminder = NewTodoReminderClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -138,11 +142,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		Reminder: NewReminderClient(cfg),
-		Todo:     NewTodoClient(cfg),
-		User:     NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Reminder:     NewReminderClient(cfg),
+		Todo:         NewTodoClient(cfg),
+		TodoReminder: NewTodoReminderClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -160,11 +165,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		Reminder: NewReminderClient(cfg),
-		Todo:     NewTodoClient(cfg),
-		User:     NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Reminder:     NewReminderClient(cfg),
+		Todo:         NewTodoClient(cfg),
+		TodoReminder: NewTodoReminderClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -195,6 +201,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Reminder.Use(hooks...)
 	c.Todo.Use(hooks...)
+	c.TodoReminder.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -203,6 +210,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Reminder.Intercept(interceptors...)
 	c.Todo.Intercept(interceptors...)
+	c.TodoReminder.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
@@ -213,6 +221,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Reminder.mutate(ctx, m)
 	case *TodoMutation:
 		return c.Todo.mutate(ctx, m)
+	case *TodoReminderMutation:
+		return c.TodoReminder.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -326,6 +336,38 @@ func (c *ReminderClient) GetX(ctx context.Context, id int) *Reminder {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryTodo queries the todo edge of a Reminder.
+func (c *ReminderClient) QueryTodo(_m *Reminder) *TodoQuery {
+	query := (&TodoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reminder.Table, reminder.FieldID, id),
+			sqlgraph.To(todo.Table, todo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, reminder.TodoTable, reminder.TodoPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTodoReminders queries the todo_reminders edge of a Reminder.
+func (c *ReminderClient) QueryTodoReminders(_m *Reminder) *TodoReminderQuery {
+	query := (&TodoReminderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reminder.Table, reminder.FieldID, id),
+			sqlgraph.To(todoreminder.Table, todoreminder.ReminderColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, reminder.TodoRemindersTable, reminder.TodoRemindersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -478,6 +520,38 @@ func (c *TodoClient) QueryOwner(_m *Todo) *UserQuery {
 	return query
 }
 
+// QueryReminders queries the reminders edge of a Todo.
+func (c *TodoClient) QueryReminders(_m *Todo) *ReminderQuery {
+	query := (&ReminderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.To(reminder.Table, reminder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, todo.RemindersTable, todo.RemindersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTodoReminders queries the todo_reminders edge of a Todo.
+func (c *TodoClient) QueryTodoReminders(_m *Todo) *TodoReminderQuery {
+	query := (&TodoReminderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.To(todoreminder.Table, todoreminder.TodoColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, todo.TodoRemindersTable, todo.TodoRemindersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TodoClient) Hooks() []Hook {
 	return c.hooks.Todo
@@ -500,6 +574,122 @@ func (c *TodoClient) mutate(ctx context.Context, m *TodoMutation) (Value, error)
 		return (&TodoDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Todo mutation op: %q", m.Op())
+	}
+}
+
+// TodoReminderClient is a client for the TodoReminder schema.
+type TodoReminderClient struct {
+	config
+}
+
+// NewTodoReminderClient returns a client for the TodoReminder from the given config.
+func NewTodoReminderClient(c config) *TodoReminderClient {
+	return &TodoReminderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `todoreminder.Hooks(f(g(h())))`.
+func (c *TodoReminderClient) Use(hooks ...Hook) {
+	c.hooks.TodoReminder = append(c.hooks.TodoReminder, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `todoreminder.Intercept(f(g(h())))`.
+func (c *TodoReminderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TodoReminder = append(c.inters.TodoReminder, interceptors...)
+}
+
+// Create returns a builder for creating a TodoReminder entity.
+func (c *TodoReminderClient) Create() *TodoReminderCreate {
+	mutation := newTodoReminderMutation(c.config, OpCreate)
+	return &TodoReminderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TodoReminder entities.
+func (c *TodoReminderClient) CreateBulk(builders ...*TodoReminderCreate) *TodoReminderCreateBulk {
+	return &TodoReminderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TodoReminderClient) MapCreateBulk(slice any, setFunc func(*TodoReminderCreate, int)) *TodoReminderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TodoReminderCreateBulk{err: fmt.Errorf("calling to TodoReminderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TodoReminderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TodoReminderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TodoReminder.
+func (c *TodoReminderClient) Update() *TodoReminderUpdate {
+	mutation := newTodoReminderMutation(c.config, OpUpdate)
+	return &TodoReminderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TodoReminderClient) UpdateOne(_m *TodoReminder) *TodoReminderUpdateOne {
+	mutation := newTodoReminderMutation(c.config, OpUpdateOne)
+	mutation.todo = &_m.TodoID
+	mutation.reminder = &_m.ReminderID
+	return &TodoReminderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TodoReminder.
+func (c *TodoReminderClient) Delete() *TodoReminderDelete {
+	mutation := newTodoReminderMutation(c.config, OpDelete)
+	return &TodoReminderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Query returns a query builder for TodoReminder.
+func (c *TodoReminderClient) Query() *TodoReminderQuery {
+	return &TodoReminderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTodoReminder},
+		inters: c.Interceptors(),
+	}
+}
+
+// QueryTodo queries the todo edge of a TodoReminder.
+func (c *TodoReminderClient) QueryTodo(_m *TodoReminder) *TodoQuery {
+	return c.Query().
+		Where(todoreminder.TodoID(_m.TodoID), todoreminder.ReminderID(_m.ReminderID)).
+		QueryTodo()
+}
+
+// QueryReminder queries the reminder edge of a TodoReminder.
+func (c *TodoReminderClient) QueryReminder(_m *TodoReminder) *ReminderQuery {
+	return c.Query().
+		Where(todoreminder.TodoID(_m.TodoID), todoreminder.ReminderID(_m.ReminderID)).
+		QueryReminder()
+}
+
+// Hooks returns the client hooks.
+func (c *TodoReminderClient) Hooks() []Hook {
+	return c.hooks.TodoReminder
+}
+
+// Interceptors returns the client interceptors.
+func (c *TodoReminderClient) Interceptors() []Interceptor {
+	return c.inters.TodoReminder
+}
+
+func (c *TodoReminderClient) mutate(ctx context.Context, m *TodoReminderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TodoReminderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TodoReminderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TodoReminderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TodoReminderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TodoReminder mutation op: %q", m.Op())
 	}
 }
 
@@ -655,10 +845,10 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Reminder, Todo, User []ent.Hook
+		Reminder, Todo, TodoReminder, User []ent.Hook
 	}
 	inters struct {
-		Reminder, Todo, User []ent.Interceptor
+		Reminder, Todo, TodoReminder, User []ent.Interceptor
 	}
 )
 

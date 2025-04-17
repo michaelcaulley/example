@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"example/internal/ent/reminder"
+	"example/internal/ent/todo"
 	"fmt"
 	"time"
 
@@ -32,6 +33,21 @@ func (_c *ReminderCreate) SetCreatedAt(v time.Time) *ReminderCreate {
 func (_c *ReminderCreate) SetUpdatedAt(v time.Time) *ReminderCreate {
 	_c.mutation.SetUpdatedAt(v)
 	return _c
+}
+
+// AddTodoIDs adds the "todo" edge to the Todo entity by IDs.
+func (_c *ReminderCreate) AddTodoIDs(ids ...int) *ReminderCreate {
+	_c.mutation.AddTodoIDs(ids...)
+	return _c
+}
+
+// AddTodo adds the "todo" edges to the Todo entity.
+func (_c *ReminderCreate) AddTodo(v ...*Todo) *ReminderCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTodoIDs(ids...)
 }
 
 // Mutation returns the ReminderMutation object of the builder.
@@ -105,6 +121,22 @@ func (_c *ReminderCreate) createSpec() (*Reminder, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(reminder.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.TodoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -142,6 +143,52 @@ func UpdatedAtLT(v time.Time) predicate.Reminder {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Reminder {
 	return predicate.Reminder(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// HasTodo applies the HasEdge predicate on the "todo" edge.
+func HasTodo() predicate.Reminder {
+	return predicate.Reminder(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, TodoTable, TodoPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTodoWith applies the HasEdge predicate on the "todo" edge with a given conditions (other predicates).
+func HasTodoWith(preds ...predicate.Todo) predicate.Reminder {
+	return predicate.Reminder(func(s *sql.Selector) {
+		step := newTodoStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTodoReminders applies the HasEdge predicate on the "todo_reminders" edge.
+func HasTodoReminders() predicate.Reminder {
+	return predicate.Reminder(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TodoRemindersTable, TodoRemindersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTodoRemindersWith applies the HasEdge predicate on the "todo_reminders" edge with a given conditions (other predicates).
+func HasTodoRemindersWith(preds ...predicate.TodoReminder) predicate.Reminder {
+	return predicate.Reminder(func(s *sql.Selector) {
+		step := newTodoRemindersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

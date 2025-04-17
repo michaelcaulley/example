@@ -159,6 +159,30 @@ func (f TodoMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoMutation", m)
 }
 
+// The TodoReminderQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type TodoReminderQueryRuleFunc func(context.Context, *ent.TodoReminderQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f TodoReminderQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TodoReminderQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TodoReminderQuery", q)
+}
+
+// The TodoReminderMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type TodoReminderMutationRuleFunc func(context.Context, *ent.TodoReminderMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f TodoReminderMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.TodoReminderMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoReminderMutation", m)
+}
+
 // The UserQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type UserQueryRuleFunc func(context.Context, *ent.UserQuery) error
@@ -222,6 +246,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.TodoQuery:
 		return q.Filter(), nil
+	case *ent.TodoReminderQuery:
+		return q.Filter(), nil
 	case *ent.UserQuery:
 		return q.Filter(), nil
 	default:
@@ -234,6 +260,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.ReminderMutation:
 		return m.Filter(), nil
 	case *ent.TodoMutation:
+		return m.Filter(), nil
+	case *ent.TodoReminderMutation:
 		return m.Filter(), nil
 	case *ent.UserMutation:
 		return m.Filter(), nil

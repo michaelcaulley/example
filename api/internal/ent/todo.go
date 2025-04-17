@@ -34,11 +34,18 @@ type Todo struct {
 type TodoEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *User `json:"owner,omitempty"`
+	// Reminders holds the value of the reminders edge.
+	Reminders []*Reminder `json:"reminders,omitempty"`
+	// TodoReminders holds the value of the todo_reminders edge.
+	TodoReminders []*TodoReminder `json:"todo_reminders,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [2]map[string]int
+
+	namedReminders     map[string][]*Reminder
+	namedTodoReminders map[string][]*TodoReminder
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -50,6 +57,24 @@ func (e TodoEdges) OwnerOrErr() (*User, error) {
 		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "owner"}
+}
+
+// RemindersOrErr returns the Reminders value or an error if the edge
+// was not loaded in eager-loading.
+func (e TodoEdges) RemindersOrErr() ([]*Reminder, error) {
+	if e.loadedTypes[1] {
+		return e.Reminders, nil
+	}
+	return nil, &NotLoadedError{edge: "reminders"}
+}
+
+// TodoRemindersOrErr returns the TodoReminders value or an error if the edge
+// was not loaded in eager-loading.
+func (e TodoEdges) TodoRemindersOrErr() ([]*TodoReminder, error) {
+	if e.loadedTypes[2] {
+		return e.TodoReminders, nil
+	}
+	return nil, &NotLoadedError{edge: "todo_reminders"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -121,6 +146,16 @@ func (_m *Todo) QueryOwner() *UserQuery {
 	return NewTodoClient(_m.config).QueryOwner(_m)
 }
 
+// QueryReminders queries the "reminders" edge of the Todo entity.
+func (_m *Todo) QueryReminders() *ReminderQuery {
+	return NewTodoClient(_m.config).QueryReminders(_m)
+}
+
+// QueryTodoReminders queries the "todo_reminders" edge of the Todo entity.
+func (_m *Todo) QueryTodoReminders() *TodoReminderQuery {
+	return NewTodoClient(_m.config).QueryTodoReminders(_m)
+}
+
 // Update returns a builder for updating this Todo.
 // Note that you need to call Todo.Unwrap() before calling this method if this Todo
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -156,6 +191,54 @@ func (_m *Todo) String() string {
 	builder.WriteString(fmt.Sprintf("%v", _m.OwnerID))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedReminders returns the Reminders named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Todo) NamedReminders(name string) ([]*Reminder, error) {
+	if _m.Edges.namedReminders == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedReminders[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Todo) appendNamedReminders(name string, edges ...*Reminder) {
+	if _m.Edges.namedReminders == nil {
+		_m.Edges.namedReminders = make(map[string][]*Reminder)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedReminders[name] = []*Reminder{}
+	} else {
+		_m.Edges.namedReminders[name] = append(_m.Edges.namedReminders[name], edges...)
+	}
+}
+
+// NamedTodoReminders returns the TodoReminders named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Todo) NamedTodoReminders(name string) ([]*TodoReminder, error) {
+	if _m.Edges.namedTodoReminders == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTodoReminders[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Todo) appendNamedTodoReminders(name string, edges ...*TodoReminder) {
+	if _m.Edges.namedTodoReminders == nil {
+		_m.Edges.namedTodoReminders = make(map[string][]*TodoReminder)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTodoReminders[name] = []*TodoReminder{}
+	} else {
+		_m.Edges.namedTodoReminders[name] = append(_m.Edges.namedTodoReminders[name], edges...)
+	}
 }
 
 // Todos is a parsable slice of Todo.

@@ -8,10 +8,34 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *Reminder) Todo(ctx context.Context) (result []*Todo, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedTodo(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.TodoOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTodo().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *Todo) Owner(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Todo) Reminders(ctx context.Context) (result []*Reminder, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedReminders(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RemindersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryReminders().All(ctx)
 	}
 	return result, err
 }

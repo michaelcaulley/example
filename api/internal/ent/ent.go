@@ -7,6 +7,7 @@ import (
 	"errors"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todoreminder"
 	"example/internal/ent/user"
 	"fmt"
 	"reflect"
@@ -75,9 +76,10 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			reminder.Table: reminder.ValidColumn,
-			todo.Table:     todo.ValidColumn,
-			user.Table:     user.ValidColumn,
+			reminder.Table:     reminder.ValidColumn,
+			todo.Table:         todo.ValidColumn,
+			todoreminder.Table: todoreminder.ValidColumn,
+			user.Table:         user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

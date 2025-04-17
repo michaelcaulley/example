@@ -7,6 +7,7 @@ import (
 	"errors"
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
+	"example/internal/ent/todo"
 	"fmt"
 	"time"
 
@@ -43,9 +44,45 @@ func (_u *ReminderUpdate) SetNillableUpdatedAt(v *time.Time) *ReminderUpdate {
 	return _u
 }
 
+// AddTodoIDs adds the "todo" edge to the Todo entity by IDs.
+func (_u *ReminderUpdate) AddTodoIDs(ids ...int) *ReminderUpdate {
+	_u.mutation.AddTodoIDs(ids...)
+	return _u
+}
+
+// AddTodo adds the "todo" edges to the Todo entity.
+func (_u *ReminderUpdate) AddTodo(v ...*Todo) *ReminderUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTodoIDs(ids...)
+}
+
 // Mutation returns the ReminderMutation object of the builder.
 func (_u *ReminderUpdate) Mutation() *ReminderMutation {
 	return _u.mutation
+}
+
+// ClearTodo clears all "todo" edges to the Todo entity.
+func (_u *ReminderUpdate) ClearTodo() *ReminderUpdate {
+	_u.mutation.ClearTodo()
+	return _u
+}
+
+// RemoveTodoIDs removes the "todo" edge to Todo entities by IDs.
+func (_u *ReminderUpdate) RemoveTodoIDs(ids ...int) *ReminderUpdate {
+	_u.mutation.RemoveTodoIDs(ids...)
+	return _u
+}
+
+// RemoveTodo removes "todo" edges to Todo entities.
+func (_u *ReminderUpdate) RemoveTodo(v ...*Todo) *ReminderUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTodoIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -93,6 +130,51 @@ func (_u *ReminderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(reminder.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if _u.mutation.TodoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTodoIDs(); len(nodes) > 0 && !_u.mutation.TodoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TodoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -129,9 +211,45 @@ func (_u *ReminderUpdateOne) SetNillableUpdatedAt(v *time.Time) *ReminderUpdateO
 	return _u
 }
 
+// AddTodoIDs adds the "todo" edge to the Todo entity by IDs.
+func (_u *ReminderUpdateOne) AddTodoIDs(ids ...int) *ReminderUpdateOne {
+	_u.mutation.AddTodoIDs(ids...)
+	return _u
+}
+
+// AddTodo adds the "todo" edges to the Todo entity.
+func (_u *ReminderUpdateOne) AddTodo(v ...*Todo) *ReminderUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTodoIDs(ids...)
+}
+
 // Mutation returns the ReminderMutation object of the builder.
 func (_u *ReminderUpdateOne) Mutation() *ReminderMutation {
 	return _u.mutation
+}
+
+// ClearTodo clears all "todo" edges to the Todo entity.
+func (_u *ReminderUpdateOne) ClearTodo() *ReminderUpdateOne {
+	_u.mutation.ClearTodo()
+	return _u
+}
+
+// RemoveTodoIDs removes the "todo" edge to Todo entities by IDs.
+func (_u *ReminderUpdateOne) RemoveTodoIDs(ids ...int) *ReminderUpdateOne {
+	_u.mutation.RemoveTodoIDs(ids...)
+	return _u
+}
+
+// RemoveTodo removes "todo" edges to Todo entities.
+func (_u *ReminderUpdateOne) RemoveTodo(v ...*Todo) *ReminderUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTodoIDs(ids...)
 }
 
 // Where appends a list predicates to the ReminderUpdate builder.
@@ -208,6 +326,51 @@ func (_u *ReminderUpdateOne) sqlSave(ctx context.Context) (_node *Reminder, err 
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(reminder.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.TodoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTodoIDs(); len(nodes) > 0 && !_u.mutation.TodoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TodoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   reminder.TodoTable,
+			Columns: reminder.TodoPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Reminder{config: _u.config}

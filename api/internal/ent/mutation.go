@@ -8,6 +8,7 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todoreminder"
 	"example/internal/ent/user"
 	"fmt"
 	"sync"
@@ -26,9 +27,10 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeReminder = "Reminder"
-	TypeTodo     = "Todo"
-	TypeUser     = "User"
+	TypeReminder     = "Reminder"
+	TypeTodo         = "Todo"
+	TypeTodoReminder = "TodoReminder"
+	TypeUser         = "User"
 )
 
 // ReminderMutation represents an operation that mutates the Reminder nodes in the graph.
@@ -40,6 +42,9 @@ type ReminderMutation struct {
 	created_at    *time.Time
 	updated_at    *time.Time
 	clearedFields map[string]struct{}
+	todo          map[int]struct{}
+	removedtodo   map[int]struct{}
+	clearedtodo   bool
 	done          bool
 	oldValue      func(context.Context) (*Reminder, error)
 	predicates    []predicate.Reminder
@@ -215,6 +220,60 @@ func (m *ReminderMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// AddTodoIDs adds the "todo" edge to the Todo entity by ids.
+func (m *ReminderMutation) AddTodoIDs(ids ...int) {
+	if m.todo == nil {
+		m.todo = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.todo[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTodo clears the "todo" edge to the Todo entity.
+func (m *ReminderMutation) ClearTodo() {
+	m.clearedtodo = true
+}
+
+// TodoCleared reports if the "todo" edge to the Todo entity was cleared.
+func (m *ReminderMutation) TodoCleared() bool {
+	return m.clearedtodo
+}
+
+// RemoveTodoIDs removes the "todo" edge to the Todo entity by IDs.
+func (m *ReminderMutation) RemoveTodoIDs(ids ...int) {
+	if m.removedtodo == nil {
+		m.removedtodo = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.todo, ids[i])
+		m.removedtodo[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTodo returns the removed IDs of the "todo" edge to the Todo entity.
+func (m *ReminderMutation) RemovedTodoIDs() (ids []int) {
+	for id := range m.removedtodo {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TodoIDs returns the "todo" edge IDs in the mutation.
+func (m *ReminderMutation) TodoIDs() (ids []int) {
+	for id := range m.todo {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTodo resets all changes to the "todo" edge.
+func (m *ReminderMutation) ResetTodo() {
+	m.todo = nil
+	m.clearedtodo = false
+	m.removedtodo = nil
+}
+
 // Where appends a list predicates to the ReminderMutation builder.
 func (m *ReminderMutation) Where(ps ...predicate.Reminder) {
 	m.predicates = append(m.predicates, ps...)
@@ -365,66 +424,105 @@ func (m *ReminderMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReminderMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.todo != nil {
+		edges = append(edges, reminder.EdgeTodo)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ReminderMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case reminder.EdgeTodo:
+		ids := make([]ent.Value, 0, len(m.todo))
+		for id := range m.todo {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReminderMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedtodo != nil {
+		edges = append(edges, reminder.EdgeTodo)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ReminderMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case reminder.EdgeTodo:
+		ids := make([]ent.Value, 0, len(m.removedtodo))
+		for id := range m.removedtodo {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReminderMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedtodo {
+		edges = append(edges, reminder.EdgeTodo)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ReminderMutation) EdgeCleared(name string) bool {
+	switch name {
+	case reminder.EdgeTodo:
+		return m.clearedtodo
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ReminderMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Reminder unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ReminderMutation) ResetEdge(name string) error {
+	switch name {
+	case reminder.EdgeTodo:
+		m.ResetTodo()
+		return nil
+	}
 	return fmt.Errorf("unknown Reminder edge %s", name)
 }
 
 // TodoMutation represents an operation that mutates the Todo nodes in the graph.
 type TodoMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	text          *string
-	done_at       *time.Time
-	clearedFields map[string]struct{}
-	owner         *int
-	clearedowner  bool
-	done          bool
-	oldValue      func(context.Context) (*Todo, error)
-	predicates    []predicate.Todo
+	op               Op
+	typ              string
+	id               *int
+	text             *string
+	done_at          *time.Time
+	clearedFields    map[string]struct{}
+	owner            *int
+	clearedowner     bool
+	reminders        map[int]struct{}
+	removedreminders map[int]struct{}
+	clearedreminders bool
+	done             bool
+	oldValue         func(context.Context) (*Todo, error)
+	predicates       []predicate.Todo
 }
 
 var _ ent.Mutation = (*TodoMutation)(nil)
@@ -673,6 +771,60 @@ func (m *TodoMutation) ResetOwner() {
 	m.clearedowner = false
 }
 
+// AddReminderIDs adds the "reminders" edge to the Reminder entity by ids.
+func (m *TodoMutation) AddReminderIDs(ids ...int) {
+	if m.reminders == nil {
+		m.reminders = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.reminders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReminders clears the "reminders" edge to the Reminder entity.
+func (m *TodoMutation) ClearReminders() {
+	m.clearedreminders = true
+}
+
+// RemindersCleared reports if the "reminders" edge to the Reminder entity was cleared.
+func (m *TodoMutation) RemindersCleared() bool {
+	return m.clearedreminders
+}
+
+// RemoveReminderIDs removes the "reminders" edge to the Reminder entity by IDs.
+func (m *TodoMutation) RemoveReminderIDs(ids ...int) {
+	if m.removedreminders == nil {
+		m.removedreminders = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.reminders, ids[i])
+		m.removedreminders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReminders returns the removed IDs of the "reminders" edge to the Reminder entity.
+func (m *TodoMutation) RemovedRemindersIDs() (ids []int) {
+	for id := range m.removedreminders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RemindersIDs returns the "reminders" edge IDs in the mutation.
+func (m *TodoMutation) RemindersIDs() (ids []int) {
+	for id := range m.reminders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReminders resets all changes to the "reminders" edge.
+func (m *TodoMutation) ResetReminders() {
+	m.reminders = nil
+	m.clearedreminders = false
+	m.removedreminders = nil
+}
+
 // Where appends a list predicates to the TodoMutation builder.
 func (m *TodoMutation) Where(ps ...predicate.Todo) {
 	m.predicates = append(m.predicates, ps...)
@@ -852,9 +1004,12 @@ func (m *TodoMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TodoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.owner != nil {
 		edges = append(edges, todo.EdgeOwner)
+	}
+	if m.reminders != nil {
+		edges = append(edges, todo.EdgeReminders)
 	}
 	return edges
 }
@@ -867,27 +1022,47 @@ func (m *TodoMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
+	case todo.EdgeReminders:
+		ids := make([]ent.Value, 0, len(m.reminders))
+		for id := range m.reminders {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TodoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedreminders != nil {
+		edges = append(edges, todo.EdgeReminders)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *TodoMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case todo.EdgeReminders:
+		ids := make([]ent.Value, 0, len(m.removedreminders))
+		for id := range m.removedreminders {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TodoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedowner {
 		edges = append(edges, todo.EdgeOwner)
+	}
+	if m.clearedreminders {
+		edges = append(edges, todo.EdgeReminders)
 	}
 	return edges
 }
@@ -898,6 +1073,8 @@ func (m *TodoMutation) EdgeCleared(name string) bool {
 	switch name {
 	case todo.EdgeOwner:
 		return m.clearedowner
+	case todo.EdgeReminders:
+		return m.clearedreminders
 	}
 	return false
 }
@@ -920,8 +1097,393 @@ func (m *TodoMutation) ResetEdge(name string) error {
 	case todo.EdgeOwner:
 		m.ResetOwner()
 		return nil
+	case todo.EdgeReminders:
+		m.ResetReminders()
+		return nil
 	}
 	return fmt.Errorf("unknown Todo edge %s", name)
+}
+
+// TodoReminderMutation represents an operation that mutates the TodoReminder nodes in the graph.
+type TodoReminderMutation struct {
+	config
+	op              Op
+	typ             string
+	clearedFields   map[string]struct{}
+	todo            *int
+	clearedtodo     bool
+	reminder        *int
+	clearedreminder bool
+	done            bool
+	oldValue        func(context.Context) (*TodoReminder, error)
+	predicates      []predicate.TodoReminder
+}
+
+var _ ent.Mutation = (*TodoReminderMutation)(nil)
+
+// todoreminderOption allows management of the mutation configuration using functional options.
+type todoreminderOption func(*TodoReminderMutation)
+
+// newTodoReminderMutation creates new mutation for the TodoReminder entity.
+func newTodoReminderMutation(c config, op Op, opts ...todoreminderOption) *TodoReminderMutation {
+	m := &TodoReminderMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTodoReminder,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TodoReminderMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TodoReminderMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetTodoID sets the "todo_id" field.
+func (m *TodoReminderMutation) SetTodoID(i int) {
+	m.todo = &i
+}
+
+// TodoID returns the value of the "todo_id" field in the mutation.
+func (m *TodoReminderMutation) TodoID() (r int, exists bool) {
+	v := m.todo
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTodoID resets all changes to the "todo_id" field.
+func (m *TodoReminderMutation) ResetTodoID() {
+	m.todo = nil
+}
+
+// SetReminderID sets the "reminder_id" field.
+func (m *TodoReminderMutation) SetReminderID(i int) {
+	m.reminder = &i
+}
+
+// ReminderID returns the value of the "reminder_id" field in the mutation.
+func (m *TodoReminderMutation) ReminderID() (r int, exists bool) {
+	v := m.reminder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetReminderID resets all changes to the "reminder_id" field.
+func (m *TodoReminderMutation) ResetReminderID() {
+	m.reminder = nil
+}
+
+// ClearTodo clears the "todo" edge to the Todo entity.
+func (m *TodoReminderMutation) ClearTodo() {
+	m.clearedtodo = true
+	m.clearedFields[todoreminder.FieldTodoID] = struct{}{}
+}
+
+// TodoCleared reports if the "todo" edge to the Todo entity was cleared.
+func (m *TodoReminderMutation) TodoCleared() bool {
+	return m.clearedtodo
+}
+
+// TodoIDs returns the "todo" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TodoID instead. It exists only for internal usage by the builders.
+func (m *TodoReminderMutation) TodoIDs() (ids []int) {
+	if id := m.todo; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTodo resets all changes to the "todo" edge.
+func (m *TodoReminderMutation) ResetTodo() {
+	m.todo = nil
+	m.clearedtodo = false
+}
+
+// ClearReminder clears the "reminder" edge to the Reminder entity.
+func (m *TodoReminderMutation) ClearReminder() {
+	m.clearedreminder = true
+	m.clearedFields[todoreminder.FieldReminderID] = struct{}{}
+}
+
+// ReminderCleared reports if the "reminder" edge to the Reminder entity was cleared.
+func (m *TodoReminderMutation) ReminderCleared() bool {
+	return m.clearedreminder
+}
+
+// ReminderIDs returns the "reminder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ReminderID instead. It exists only for internal usage by the builders.
+func (m *TodoReminderMutation) ReminderIDs() (ids []int) {
+	if id := m.reminder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetReminder resets all changes to the "reminder" edge.
+func (m *TodoReminderMutation) ResetReminder() {
+	m.reminder = nil
+	m.clearedreminder = false
+}
+
+// Where appends a list predicates to the TodoReminderMutation builder.
+func (m *TodoReminderMutation) Where(ps ...predicate.TodoReminder) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TodoReminderMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TodoReminderMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TodoReminder, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TodoReminderMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TodoReminderMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TodoReminder).
+func (m *TodoReminderMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TodoReminderMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.todo != nil {
+		fields = append(fields, todoreminder.FieldTodoID)
+	}
+	if m.reminder != nil {
+		fields = append(fields, todoreminder.FieldReminderID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TodoReminderMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case todoreminder.FieldTodoID:
+		return m.TodoID()
+	case todoreminder.FieldReminderID:
+		return m.ReminderID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TodoReminderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, errors.New("edge schema TodoReminder does not support getting old values")
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoReminderMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case todoreminder.FieldTodoID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTodoID(v)
+		return nil
+	case todoreminder.FieldReminderID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReminderID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TodoReminder field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TodoReminderMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TodoReminderMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoReminderMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TodoReminder numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TodoReminderMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TodoReminderMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TodoReminderMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown TodoReminder nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TodoReminderMutation) ResetField(name string) error {
+	switch name {
+	case todoreminder.FieldTodoID:
+		m.ResetTodoID()
+		return nil
+	case todoreminder.FieldReminderID:
+		m.ResetReminderID()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoReminder field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TodoReminderMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.todo != nil {
+		edges = append(edges, todoreminder.EdgeTodo)
+	}
+	if m.reminder != nil {
+		edges = append(edges, todoreminder.EdgeReminder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TodoReminderMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case todoreminder.EdgeTodo:
+		if id := m.todo; id != nil {
+			return []ent.Value{*id}
+		}
+	case todoreminder.EdgeReminder:
+		if id := m.reminder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TodoReminderMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TodoReminderMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TodoReminderMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedtodo {
+		edges = append(edges, todoreminder.EdgeTodo)
+	}
+	if m.clearedreminder {
+		edges = append(edges, todoreminder.EdgeReminder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TodoReminderMutation) EdgeCleared(name string) bool {
+	switch name {
+	case todoreminder.EdgeTodo:
+		return m.clearedtodo
+	case todoreminder.EdgeReminder:
+		return m.clearedreminder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TodoReminderMutation) ClearEdge(name string) error {
+	switch name {
+	case todoreminder.EdgeTodo:
+		m.ClearTodo()
+		return nil
+	case todoreminder.EdgeReminder:
+		m.ClearReminder()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoReminder unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TodoReminderMutation) ResetEdge(name string) error {
+	switch name {
+	case todoreminder.EdgeTodo:
+		m.ResetTodo()
+		return nil
+	case todoreminder.EdgeReminder:
+		m.ResetReminder()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoReminder edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

@@ -20,6 +20,10 @@ const (
 	FieldOwnerID = "owner_id"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
+	// EdgeReminders holds the string denoting the reminders edge name in mutations.
+	EdgeReminders = "reminders"
+	// EdgeTodoReminders holds the string denoting the todo_reminders edge name in mutations.
+	EdgeTodoReminders = "todo_reminders"
 	// Table holds the table name of the todo in the database.
 	Table = "todos"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -29,6 +33,18 @@ const (
 	OwnerInverseTable = "users"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "owner_id"
+	// RemindersTable is the table that holds the reminders relation/edge. The primary key declared below.
+	RemindersTable = "todo_reminders"
+	// RemindersInverseTable is the table name for the Reminder entity.
+	// It exists in this package in order to avoid circular dependency with the "reminder" package.
+	RemindersInverseTable = "reminders"
+	// TodoRemindersTable is the table that holds the todo_reminders relation/edge.
+	TodoRemindersTable = "todo_reminders"
+	// TodoRemindersInverseTable is the table name for the TodoReminder entity.
+	// It exists in this package in order to avoid circular dependency with the "todoreminder" package.
+	TodoRemindersInverseTable = "todo_reminders"
+	// TodoRemindersColumn is the table column denoting the todo_reminders relation/edge.
+	TodoRemindersColumn = "todo_id"
 )
 
 // Columns holds all SQL columns for todo fields.
@@ -38,6 +54,12 @@ var Columns = []string{
 	FieldDoneAt,
 	FieldOwnerID,
 }
+
+var (
+	// RemindersPrimaryKey and RemindersColumn2 are the table columns denoting the
+	// primary key for the reminders relation (M2M).
+	RemindersPrimaryKey = []string{"todo_id", "reminder_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -83,10 +105,52 @@ func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOwnerStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByRemindersCount orders the results by reminders count.
+func ByRemindersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRemindersStep(), opts...)
+	}
+}
+
+// ByReminders orders the results by reminders terms.
+func ByReminders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRemindersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTodoRemindersCount orders the results by todo_reminders count.
+func ByTodoRemindersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTodoRemindersStep(), opts...)
+	}
+}
+
+// ByTodoReminders orders the results by todo_reminders terms.
+func ByTodoReminders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTodoRemindersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newOwnerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OwnerInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
+	)
+}
+func newRemindersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RemindersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, RemindersTable, RemindersPrimaryKey...),
+	)
+}
+func newTodoRemindersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TodoRemindersInverseTable, TodoRemindersColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, TodoRemindersTable, TodoRemindersColumn),
 	)
 }

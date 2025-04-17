@@ -4,12 +4,16 @@ package ent
 
 // CreateTodoInput represents a mutation input for creating todos.
 type CreateTodoInput struct {
-	Text string
+	Text        string
+	ReminderIDs []int
 }
 
 // Mutate applies the CreateTodoInput on the TodoMutation builder.
 func (i *CreateTodoInput) Mutate(m *TodoMutation) {
 	m.SetText(i.Text)
+	if v := i.ReminderIDs; len(v) > 0 {
+		m.AddReminderIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateTodoInput on the TodoCreate builder.

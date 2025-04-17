@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Reminder is the model entity for the Reminder schema.
+// Reminder for a user to take action.
 type Reminder struct {
 	config `json:"-"`
 	// ID of the ent.
@@ -20,8 +20,45 @@ type Reminder struct {
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ReminderQuery when eager-loading is set.
+	Edges        ReminderEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// ReminderEdges holds the relations/edges for other nodes in the graph.
+type ReminderEdges struct {
+	// Todo holds the value of the todo edge.
+	Todo []*Todo `json:"todo,omitempty"`
+	// TodoReminders holds the value of the todo_reminders edge.
+	TodoReminders []*TodoReminder `json:"todo_reminders,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedTodo          map[string][]*Todo
+	namedTodoReminders map[string][]*TodoReminder
+}
+
+// TodoOrErr returns the Todo value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReminderEdges) TodoOrErr() ([]*Todo, error) {
+	if e.loadedTypes[0] {
+		return e.Todo, nil
+	}
+	return nil, &NotLoadedError{edge: "todo"}
+}
+
+// TodoRemindersOrErr returns the TodoReminders value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReminderEdges) TodoRemindersOrErr() ([]*TodoReminder, error) {
+	if e.loadedTypes[1] {
+		return e.TodoReminders, nil
+	}
+	return nil, &NotLoadedError{edge: "todo_reminders"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -79,6 +116,16 @@ func (_m *Reminder) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
+// QueryTodo queries the "todo" edge of the Reminder entity.
+func (_m *Reminder) QueryTodo() *TodoQuery {
+	return NewReminderClient(_m.config).QueryTodo(_m)
+}
+
+// QueryTodoReminders queries the "todo_reminders" edge of the Reminder entity.
+func (_m *Reminder) QueryTodoReminders() *TodoReminderQuery {
+	return NewReminderClient(_m.config).QueryTodoReminders(_m)
+}
+
 // Update returns a builder for updating this Reminder.
 // Note that you need to call Reminder.Unwrap() before calling this method if this Reminder
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -109,6 +156,54 @@ func (_m *Reminder) String() string {
 	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedTodo returns the Todo named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Reminder) NamedTodo(name string) ([]*Todo, error) {
+	if _m.Edges.namedTodo == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTodo[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Reminder) appendNamedTodo(name string, edges ...*Todo) {
+	if _m.Edges.namedTodo == nil {
+		_m.Edges.namedTodo = make(map[string][]*Todo)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTodo[name] = []*Todo{}
+	} else {
+		_m.Edges.namedTodo[name] = append(_m.Edges.namedTodo[name], edges...)
+	}
+}
+
+// NamedTodoReminders returns the TodoReminders named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Reminder) NamedTodoReminders(name string) ([]*TodoReminder, error) {
+	if _m.Edges.namedTodoReminders == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTodoReminders[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Reminder) appendNamedTodoReminders(name string, edges ...*TodoReminder) {
+	if _m.Edges.namedTodoReminders == nil {
+		_m.Edges.namedTodoReminders = make(map[string][]*TodoReminder)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTodoReminders[name] = []*TodoReminder{}
+	} else {
+		_m.Edges.namedTodoReminders[name] = append(_m.Edges.namedTodoReminders[name], edges...)
+	}
 }
 
 // Reminders is a parsable slice of Reminder.

@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"encoding/json"
+	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
 	"example/internal/ent/user"
 )
@@ -37,7 +38,7 @@ func (_m *Reminder) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "Reminder",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
@@ -56,6 +57,16 @@ func (_m *Reminder) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "updated_at",
 		Value: string(buf),
 	}
+	node.Edges[0] = &Edge{
+		Type: "Todo",
+		Name: "todo",
+	}
+	err = _m.QueryTodo().
+		Select(todo.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -65,7 +76,7 @@ func (_m *Todo) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "Todo",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.Text); err != nil {
@@ -99,6 +110,16 @@ func (_m *Todo) Node(ctx context.Context) (node *Node, err error) {
 	err = _m.QueryOwner().
 		Select(user.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Reminder",
+		Name: "reminders",
+	}
+	err = _m.QueryReminders().
+		Select(reminder.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}

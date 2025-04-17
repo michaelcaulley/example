@@ -18,6 +18,7 @@ var (
 	// RemindersTable holds the schema information for the "reminders" table.
 	RemindersTable = &schema.Table{
 		Name:       "reminders",
+		Comment:    "Reminder for a user to take action.",
 		Columns:    RemindersColumns,
 		PrimaryKey: []*schema.Column{RemindersColumns[0]},
 	}
@@ -49,6 +50,32 @@ var (
 			},
 		},
 	}
+	// TodoRemindersColumns holds the columns for the "todo_reminders" table.
+	TodoRemindersColumns = []*schema.Column{
+		{Name: "todo_id", Type: field.TypeInt},
+		{Name: "reminder_id", Type: field.TypeInt},
+	}
+	// TodoRemindersTable holds the schema information for the "todo_reminders" table.
+	TodoRemindersTable = &schema.Table{
+		Name:       "todo_reminders",
+		Comment:    "A join table holding the relationships of todos to reminders",
+		Columns:    TodoRemindersColumns,
+		PrimaryKey: []*schema.Column{TodoRemindersColumns[0], TodoRemindersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "todo_reminders_todos_todo",
+				Columns:    []*schema.Column{TodoRemindersColumns[0]},
+				RefColumns: []*schema.Column{TodosColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "todo_reminders_reminders_reminder",
+				Columns:    []*schema.Column{TodoRemindersColumns[1]},
+				RefColumns: []*schema.Column{RemindersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -64,17 +91,24 @@ var (
 	Tables = []*schema.Table{
 		RemindersTable,
 		TodosTable,
+		TodoRemindersTable,
 		UsersTable,
 	}
 )
 
 func init() {
 	RemindersTable.Annotation = &entsql.Annotation{
+		Table:          "reminders",
 		IncrementStart: func(i int) *int { return &i }(8589934592),
 	}
 	TodosTable.ForeignKeys[0].RefTable = UsersTable
 	TodosTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(4294967296),
+	}
+	TodoRemindersTable.ForeignKeys[0].RefTable = TodosTable
+	TodoRemindersTable.ForeignKeys[1].RefTable = RemindersTable
+	TodoRemindersTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}
 	UsersTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(0),

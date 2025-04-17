@@ -36,6 +36,19 @@ func (_q *ReminderQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "todo":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, todoImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTodo(alias, func(wq *TodoQuery) {
+				*wq = *query
+			})
 		case "createdAt":
 			if _, ok := fieldSeen[reminder.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, reminder.FieldCreatedAt)
@@ -145,6 +158,19 @@ func (_q *TodoQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, todo.FieldOwnerID)
 				fieldSeen[todo.FieldOwnerID] = struct{}{}
 			}
+
+		case "reminders":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ReminderClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, reminderImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedReminders(alias, func(wq *ReminderQuery) {
+				*wq = *query
+			})
 		case "text":
 			if _, ok := fieldSeen[todo.FieldText]; !ok {
 				selectedFields = append(selectedFields, todo.FieldText)
