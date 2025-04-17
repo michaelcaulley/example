@@ -7,6 +7,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
 )
 
 // TodoID applies equality check predicate on the "todo_id" field. It's identical to TodoIDEQ.
@@ -66,6 +68,9 @@ func HasTodo() predicate.TodoReminder {
 			sqlgraph.From(Table, TodoColumn),
 			sqlgraph.Edge(sqlgraph.M2O, false, TodoTable, TodoColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -74,6 +79,9 @@ func HasTodo() predicate.TodoReminder {
 func HasTodoWith(preds ...predicate.Todo) predicate.TodoReminder {
 	return predicate.TodoReminder(func(s *sql.Selector) {
 		step := newTodoStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -89,6 +97,9 @@ func HasReminder() predicate.TodoReminder {
 			sqlgraph.From(Table, ReminderColumn),
 			sqlgraph.Edge(sqlgraph.M2O, false, ReminderTable, ReminderColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Reminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -97,6 +108,9 @@ func HasReminder() predicate.TodoReminder {
 func HasReminderWith(preds ...predicate.Reminder) predicate.TodoReminder {
 	return predicate.TodoReminder(func(s *sql.Selector) {
 		step := newReminderStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Reminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

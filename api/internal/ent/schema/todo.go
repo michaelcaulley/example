@@ -65,7 +65,7 @@ func (Todo) Indexes() []ent.Index {
 // Annotations of the Todo.
 func (Todo) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		//entsql.Schema("todo"),
+		entsql.Schema("todo"),
 		entsql.Table("todos"),
 		entgql.RelayConnection(),
 		entgql.QueryField(),

@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // TodoReminderUpdate is the builder for updating TodoReminder entities.
@@ -152,6 +154,7 @@ func (_u *TodoReminderUpdate) sqlSave(ctx context.Context) (_node int, err error
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.TodoIDs(); len(nodes) > 0 {
@@ -165,6 +168,7 @@ func (_u *TodoReminderUpdate) sqlSave(ctx context.Context) (_node int, err error
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -181,6 +185,7 @@ func (_u *TodoReminderUpdate) sqlSave(ctx context.Context) (_node int, err error
 				IDSpec: sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.ReminderIDs(); len(nodes) > 0 {
@@ -194,11 +199,14 @@ func (_u *TodoReminderUpdate) sqlSave(ctx context.Context) (_node int, err error
 				IDSpec: sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.Node.Schema = _u.schemaConfig.TodoReminder
+	ctx = internal.NewSchemaConfigContext(ctx, _u.schemaConfig)
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -375,6 +383,7 @@ func (_u *TodoReminderUpdateOne) sqlSave(ctx context.Context) (_node *TodoRemind
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.TodoIDs(); len(nodes) > 0 {
@@ -388,6 +397,7 @@ func (_u *TodoReminderUpdateOne) sqlSave(ctx context.Context) (_node *TodoRemind
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -404,6 +414,7 @@ func (_u *TodoReminderUpdateOne) sqlSave(ctx context.Context) (_node *TodoRemind
 				IDSpec: sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.ReminderIDs(); len(nodes) > 0 {
@@ -417,11 +428,14 @@ func (_u *TodoReminderUpdateOne) sqlSave(ctx context.Context) (_node *TodoRemind
 				IDSpec: sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.Node.Schema = _u.schemaConfig.TodoReminder
+	ctx = internal.NewSchemaConfigContext(ctx, _u.schemaConfig)
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &TodoReminder{config: _u.config}
 	_spec.Assign = _node.assignValues

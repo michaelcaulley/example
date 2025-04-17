@@ -32,7 +32,7 @@ func (User) Edges() []ent.Edge {
 
 func (User) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		// entsql.Schema("app"),
+		entsql.Schema("app"),
 		entsql.Table("users"),
 		entgql.RelayConnection(),
 		entgql.QueryField(),

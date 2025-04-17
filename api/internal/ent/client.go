@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 
 	stdsql "database/sql"
+	"example/internal/ent/internal"
 )
 
 // Client is the client that holds all ent builders.
@@ -71,6 +72,8 @@ type (
 		hooks *hooks
 		// interceptors to execute on queries.
 		inters *inters
+		// schemaConfig contains alternative names for all tables.
+		schemaConfig SchemaConfig
 	}
 	// Option function to configure the client.
 	Option func(*config)
@@ -79,6 +82,7 @@ type (
 // newConfig creates a new config for the client.
 func newConfig(opts ...Option) config {
 	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
+	cfg.schemaConfig = DefaultSchemaConfig
 	cfg.options(opts...)
 	return cfg
 }
@@ -474,6 +478,9 @@ func (c *ReminderClient) QueryTodo(_m *Reminder) *TodoQuery {
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, reminder.TodoTable, reminder.TodoPrimaryKey...),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -490,6 +497,9 @@ func (c *ReminderClient) QueryTodoReminders(_m *Reminder) *TodoReminderQuery {
 			sqlgraph.To(todoreminder.Table, todoreminder.ReminderColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, reminder.TodoRemindersTable, reminder.TodoRemindersColumn),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -640,6 +650,9 @@ func (c *TodoClient) QueryOwner(_m *Todo) *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, todo.OwnerTable, todo.OwnerColumn),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Todo
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -656,6 +669,9 @@ func (c *TodoClient) QueryReminders(_m *Todo) *ReminderQuery {
 			sqlgraph.To(reminder.Table, reminder.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, todo.RemindersTable, todo.RemindersPrimaryKey...),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Reminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -672,6 +688,9 @@ func (c *TodoClient) QueryTodoReminders(_m *Todo) *TodoReminderQuery {
 			sqlgraph.To(todoreminder.Table, todoreminder.TodoColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, todo.TodoRemindersTable, todo.TodoRemindersColumn),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -937,6 +956,9 @@ func (c *UserClient) QueryTodos(_m *User) *TodoQuery {
 			sqlgraph.To(todo.Table, todo.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.Todo
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -953,6 +975,9 @@ func (c *UserClient) QueryModeratorUsers(_m *User) *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, user.ModeratorUsersTable, user.ModeratorUsersPrimaryKey...),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserModerators
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -969,6 +994,9 @@ func (c *UserClient) QueryModerators(_m *User) *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.ModeratorsTable, user.ModeratorsPrimaryKey...),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -985,6 +1013,9 @@ func (c *UserClient) QueryModerator(_m *User) *ModeratorQuery {
 			sqlgraph.To(moderator.Table, moderator.UserColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.ModeratorTable, user.ModeratorColumn),
 		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Moderator
+		step.Edge.Schema = schemaConfig.Moderator
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -1025,6 +1056,30 @@ type (
 		Moderator, Reminder, Todo, TodoReminder, User []ent.Interceptor
 	}
 )
+
+var (
+	// DefaultSchemaConfig represents the default schema names for all tables as defined in ent/schema.
+	DefaultSchemaConfig = SchemaConfig{
+		Moderator:    tableSchemas[0],
+		Reminder:     tableSchemas[1],
+		Todo:         tableSchemas[1],
+		TodoReminder: tableSchemas[1],
+		User:         tableSchemas[0],
+	}
+	tableSchemas = [...]string{"app", "todo"}
+)
+
+// SchemaConfig represents alternative schema names for all tables
+// that can be passed at runtime.
+type SchemaConfig = internal.SchemaConfig
+
+// AlternateSchemas allows alternate schema names to be
+// passed into ent operations.
+func AlternateSchema(schemaConfig SchemaConfig) Option {
+	return func(c *config) {
+		c.schemaConfig = schemaConfig
+	}
+}
 
 // ExecContext allows calling the underlying ExecContext method of the driver if it is supported by it.
 // See, database/sql#DB.ExecContext for more information.

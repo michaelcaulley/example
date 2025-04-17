@@ -4,11 +4,13 @@ package ent
 
 import (
 	"context"
-	"example/internal/ent/moderator"
 	"example/internal/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
+	"example/internal/ent/moderator"
 )
 
 // ModeratorDelete is the builder for deleting a Moderator entity.
@@ -40,6 +42,8 @@ func (_d *ModeratorDelete) ExecX(ctx context.Context) int {
 
 func (_d *ModeratorDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(moderator.Table, nil)
+	_spec.Node.Schema = _d.schemaConfig.Moderator
+	ctx = internal.NewSchemaConfigContext(ctx, _d.schemaConfig)
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

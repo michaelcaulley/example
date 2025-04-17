@@ -17,6 +17,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // TodoQuery is the builder for querying Todo entities.
@@ -85,6 +87,9 @@ func (_q *TodoQuery) QueryOwner() *UserQuery {
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, todo.OwnerTable, todo.OwnerColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Todo
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -107,6 +112,9 @@ func (_q *TodoQuery) QueryReminders() *ReminderQuery {
 			sqlgraph.To(reminder.Table, reminder.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, todo.RemindersTable, todo.RemindersPrimaryKey...),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.Reminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -129,6 +137,9 @@ func (_q *TodoQuery) QueryTodoReminders() *TodoReminderQuery {
 			sqlgraph.To(todoreminder.Table, todoreminder.TodoColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, todo.TodoRemindersTable, todo.TodoRemindersColumn),
 		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -463,6 +474,8 @@ func (_q *TodoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Todo, e
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	_spec.Node.Schema = _q.schemaConfig.Todo
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -559,6 +572,7 @@ func (_q *TodoQuery) loadReminders(ctx context.Context, query *ReminderQuery, no
 	}
 	query.Where(func(s *sql.Selector) {
 		joinT := sql.Table(todo.RemindersTable)
+		joinT.Schema(_q.schemaConfig.TodoReminder)
 		s.Join(joinT).On(s.C(reminder.FieldID), joinT.C(todo.RemindersPrimaryKey[1]))
 		s.Where(sql.InValues(joinT.C(todo.RemindersPrimaryKey[0]), edgeIDs...))
 		columns := s.SelectedColumns()
@@ -640,6 +654,8 @@ func (_q *TodoQuery) loadTodoReminders(ctx context.Context, query *TodoReminderQ
 
 func (_q *TodoQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
+	_spec.Node.Schema = _q.schemaConfig.Todo
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
 	}
@@ -708,6 +724,9 @@ func (_q *TodoQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
+	t1.Schema(_q.schemaConfig.Todo)
+	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
+	selector.WithContext(ctx)
 	for _, m := range _q.modifiers {
 		m(selector)
 	}

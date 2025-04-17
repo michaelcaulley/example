@@ -13,6 +13,7 @@ down:
 # Run the code generation steps.
 generate:
 	docker compose run --rm go-runner go generate .
+	docker compose restart api
 
 # Create a versioned migration syncing the ent schema.
 ent-migration: up _ent-migration hash
