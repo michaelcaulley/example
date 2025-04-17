@@ -4,12 +4,13 @@ package ent
 
 import (
 	"context"
+	"fmt"
+
 	"encoding/json"
 	"example/internal/ent/internal"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
 	"example/internal/ent/user"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"

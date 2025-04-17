@@ -5,11 +5,13 @@ package ent
 import (
 	"context"
 	"example/internal/ent/predicate"
-	"example/internal/ent/reminder"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
+	"example/internal/ent/reminder"
 )
 
 // ReminderDelete is the builder for deleting a Reminder entity.
@@ -41,6 +43,8 @@ func (_d *ReminderDelete) ExecX(ctx context.Context) int {
 
 func (_d *ReminderDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(reminder.Table, sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt))
+	_spec.Node.Schema = _d.schemaConfig.Reminder
+	ctx = internal.NewSchemaConfigContext(ctx, _d.schemaConfig)
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

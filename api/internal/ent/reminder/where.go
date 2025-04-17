@@ -8,6 +8,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
 )
 
 // ID filters vertices based on their ID field.
@@ -152,6 +154,9 @@ func HasTodo() predicate.Reminder {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, TodoTable, TodoPrimaryKey...),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -160,6 +165,9 @@ func HasTodo() predicate.Reminder {
 func HasTodoWith(preds ...predicate.Todo) predicate.Reminder {
 	return predicate.Reminder(func(s *sql.Selector) {
 		step := newTodoStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -175,6 +183,9 @@ func HasTodoReminders() predicate.Reminder {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, TodoRemindersTable, TodoRemindersColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -183,6 +194,9 @@ func HasTodoReminders() predicate.Reminder {
 func HasTodoRemindersWith(preds ...predicate.TodoReminder) predicate.Reminder {
 	return predicate.Reminder(func(s *sql.Selector) {
 		step := newTodoRemindersStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoReminder
+		step.Edge.Schema = schemaConfig.TodoReminder
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

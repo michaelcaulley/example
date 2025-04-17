@@ -51,7 +51,7 @@ make generate
 To generate an ent versioned migration, run:
 
 ```bash
-make ent-migration
+make migration
 ```
 
 ## Other Commands
