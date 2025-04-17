@@ -46,6 +46,43 @@ var (
 			},
 		},
 	}
+	// PeoplePartnersColumns holds the columns for the "people_partners" table.
+	PeoplePartnersColumns = []*schema.Column{
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "people_partner_user_id", Type: field.TypeInt},
+	}
+	// PeoplePartnersTable holds the schema information for the "people_partners" table.
+	PeoplePartnersTable = &schema.Table{
+		Name:       "people_partners",
+		Columns:    PeoplePartnersColumns,
+		PrimaryKey: []*schema.Column{PeoplePartnersColumns[0], PeoplePartnersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "people_partners_users_user",
+				Columns:    []*schema.Column{PeoplePartnersColumns[0]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "people_partners_users_people_partner",
+				Columns:    []*schema.Column{PeoplePartnersColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "peoplepartner_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{PeoplePartnersColumns[0]},
+			},
+			{
+				Name:    "peoplepartner_people_partner_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{PeoplePartnersColumns[1]},
+			},
+		},
+	}
 	// RemindersColumns holds the columns for the "reminders" table.
 	RemindersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -127,6 +164,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ModeratorsTable,
+		PeoplePartnersTable,
 		RemindersTable,
 		TodosTable,
 		TodoRemindersTable,
@@ -139,6 +177,12 @@ func init() {
 	ModeratorsTable.ForeignKeys[1].RefTable = UsersTable
 	ModeratorsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(17179869184),
+	}
+	PeoplePartnersTable.ForeignKeys[0].RefTable = UsersTable
+	PeoplePartnersTable.ForeignKeys[1].RefTable = UsersTable
+	PeoplePartnersTable.Annotation = &entsql.Annotation{
+		Table:          "people_partners",
+		IncrementStart: func(i int) *int { return &i }(21474836480),
 	}
 	RemindersTable.Annotation = &entsql.Annotation{
 		Table:          "reminders",

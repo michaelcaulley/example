@@ -42,6 +42,6 @@ func (Reminder) Annotations() []schema.Annotation {
 		entsql.Table("reminders"),
 		schema.Comment("Reminder for a user to take action."),
 		entsql.WithComments(true),
-		// entsql.Schema("todo"),
+		entsql.Schema("todo"),
 	}
 }

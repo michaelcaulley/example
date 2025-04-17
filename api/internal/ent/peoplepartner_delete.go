@@ -8,32 +8,31 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/schema/field"
 
 	"example/internal/ent/internal"
-	"example/internal/ent/reminder"
+	"example/internal/ent/peoplepartner"
 )
 
-// ReminderDelete is the builder for deleting a Reminder entity.
-type ReminderDelete struct {
+// PeoplePartnerDelete is the builder for deleting a PeoplePartner entity.
+type PeoplePartnerDelete struct {
 	config
 	hooks    []Hook
-	mutation *ReminderMutation
+	mutation *PeoplePartnerMutation
 }
 
-// Where appends a list predicates to the ReminderDelete builder.
-func (_d *ReminderDelete) Where(ps ...predicate.Reminder) *ReminderDelete {
+// Where appends a list predicates to the PeoplePartnerDelete builder.
+func (_d *PeoplePartnerDelete) Where(ps ...predicate.PeoplePartner) *PeoplePartnerDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *ReminderDelete) Exec(ctx context.Context) (int, error) {
+func (_d *PeoplePartnerDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ReminderDelete) ExecX(ctx context.Context) int {
+func (_d *PeoplePartnerDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -41,9 +40,9 @@ func (_d *ReminderDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *ReminderDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(reminder.Table, sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt))
-	_spec.Node.Schema = _d.schemaConfig.Reminder
+func (_d *PeoplePartnerDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(peoplepartner.Table, nil)
+	_spec.Node.Schema = _d.schemaConfig.PeoplePartner
 	ctx = internal.NewSchemaConfigContext(ctx, _d.schemaConfig)
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -60,32 +59,32 @@ func (_d *ReminderDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// ReminderDeleteOne is the builder for deleting a single Reminder entity.
-type ReminderDeleteOne struct {
-	_d *ReminderDelete
+// PeoplePartnerDeleteOne is the builder for deleting a single PeoplePartner entity.
+type PeoplePartnerDeleteOne struct {
+	_d *PeoplePartnerDelete
 }
 
-// Where appends a list predicates to the ReminderDelete builder.
-func (_d *ReminderDeleteOne) Where(ps ...predicate.Reminder) *ReminderDeleteOne {
+// Where appends a list predicates to the PeoplePartnerDelete builder.
+func (_d *PeoplePartnerDeleteOne) Where(ps ...predicate.PeoplePartner) *PeoplePartnerDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *ReminderDeleteOne) Exec(ctx context.Context) error {
+func (_d *PeoplePartnerDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{reminder.Label}
+		return &NotFoundError{peoplepartner.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ReminderDeleteOne) ExecX(ctx context.Context) {
+func (_d *PeoplePartnerDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

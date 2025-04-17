@@ -49,6 +49,6 @@ func (Moderator) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		field.ID("user_id", "moderator_user_id"),
 		entsql.WithComments(true),
-		// entsql.Schema("user"),
+		entsql.Schema("user"),
 	}
 }

@@ -69,6 +69,6 @@ func (Todo) Annotations() []schema.Annotation {
 		entgql.QueryField(),
 		entgql.Mutations(entgql.MutationCreate()),
 		entsql.WithComments(true),
-		// entsql.Schema("todo"),
+		entsql.Schema("todo"),
 	}
 }

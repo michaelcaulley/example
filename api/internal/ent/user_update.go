@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+
+	"example/internal/ent/internal"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -88,6 +90,36 @@ func (_u *UserUpdate) AddModerators(v ...*User) *UserUpdate {
 	return _u.AddModeratorIDs(ids...)
 }
 
+// AddPeoplePartnerUserIDs adds the "people_partner_users" edge to the User entity by IDs.
+func (_u *UserUpdate) AddPeoplePartnerUserIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddPeoplePartnerUserIDs(ids...)
+	return _u
+}
+
+// AddPeoplePartnerUsers adds the "people_partner_users" edges to the User entity.
+func (_u *UserUpdate) AddPeoplePartnerUsers(v ...*User) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPeoplePartnerUserIDs(ids...)
+}
+
+// AddPeoplePartnerIDs adds the "people_partner" edge to the User entity by IDs.
+func (_u *UserUpdate) AddPeoplePartnerIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddPeoplePartnerIDs(ids...)
+	return _u
+}
+
+// AddPeoplePartner adds the "people_partner" edges to the User entity.
+func (_u *UserUpdate) AddPeoplePartner(v ...*User) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPeoplePartnerIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -156,6 +188,48 @@ func (_u *UserUpdate) RemoveModerators(v ...*User) *UserUpdate {
 	return _u.RemoveModeratorIDs(ids...)
 }
 
+// ClearPeoplePartnerUsers clears all "people_partner_users" edges to the User entity.
+func (_u *UserUpdate) ClearPeoplePartnerUsers() *UserUpdate {
+	_u.mutation.ClearPeoplePartnerUsers()
+	return _u
+}
+
+// RemovePeoplePartnerUserIDs removes the "people_partner_users" edge to User entities by IDs.
+func (_u *UserUpdate) RemovePeoplePartnerUserIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemovePeoplePartnerUserIDs(ids...)
+	return _u
+}
+
+// RemovePeoplePartnerUsers removes "people_partner_users" edges to User entities.
+func (_u *UserUpdate) RemovePeoplePartnerUsers(v ...*User) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePeoplePartnerUserIDs(ids...)
+}
+
+// ClearPeoplePartner clears all "people_partner" edges to the User entity.
+func (_u *UserUpdate) ClearPeoplePartner() *UserUpdate {
+	_u.mutation.ClearPeoplePartner()
+	return _u
+}
+
+// RemovePeoplePartnerIDs removes the "people_partner" edge to User entities by IDs.
+func (_u *UserUpdate) RemovePeoplePartnerIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemovePeoplePartnerIDs(ids...)
+	return _u
+}
+
+// RemovePeoplePartner removes "people_partner" edges to User entities.
+func (_u *UserUpdate) RemovePeoplePartner(v ...*User) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePeoplePartnerIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *UserUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
@@ -212,6 +286,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedTodosIDs(); len(nodes) > 0 && !_u.mutation.TodosCleared() {
@@ -225,6 +300,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -241,6 +317,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -257,6 +334,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedModeratorUsersIDs(); len(nodes) > 0 && !_u.mutation.ModeratorUsersCleared() {
@@ -270,6 +348,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -286,6 +365,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -302,6 +382,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedModeratorsIDs(); len(nodes) > 0 && !_u.mutation.ModeratorsCleared() {
@@ -315,6 +396,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -331,11 +413,110 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PeoplePartnerUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPeoplePartnerUsersIDs(); len(nodes) > 0 && !_u.mutation.PeoplePartnerUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PeoplePartnerUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PeoplePartnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPeoplePartnerIDs(); len(nodes) > 0 && !_u.mutation.PeoplePartnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PeoplePartnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	_spec.Node.Schema = _u.schemaConfig.User
+	ctx = internal.NewSchemaConfigContext(ctx, _u.schemaConfig)
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -417,6 +598,36 @@ func (_u *UserUpdateOne) AddModerators(v ...*User) *UserUpdateOne {
 	return _u.AddModeratorIDs(ids...)
 }
 
+// AddPeoplePartnerUserIDs adds the "people_partner_users" edge to the User entity by IDs.
+func (_u *UserUpdateOne) AddPeoplePartnerUserIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddPeoplePartnerUserIDs(ids...)
+	return _u
+}
+
+// AddPeoplePartnerUsers adds the "people_partner_users" edges to the User entity.
+func (_u *UserUpdateOne) AddPeoplePartnerUsers(v ...*User) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPeoplePartnerUserIDs(ids...)
+}
+
+// AddPeoplePartnerIDs adds the "people_partner" edge to the User entity by IDs.
+func (_u *UserUpdateOne) AddPeoplePartnerIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddPeoplePartnerIDs(ids...)
+	return _u
+}
+
+// AddPeoplePartner adds the "people_partner" edges to the User entity.
+func (_u *UserUpdateOne) AddPeoplePartner(v ...*User) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPeoplePartnerIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -483,6 +694,48 @@ func (_u *UserUpdateOne) RemoveModerators(v ...*User) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveModeratorIDs(ids...)
+}
+
+// ClearPeoplePartnerUsers clears all "people_partner_users" edges to the User entity.
+func (_u *UserUpdateOne) ClearPeoplePartnerUsers() *UserUpdateOne {
+	_u.mutation.ClearPeoplePartnerUsers()
+	return _u
+}
+
+// RemovePeoplePartnerUserIDs removes the "people_partner_users" edge to User entities by IDs.
+func (_u *UserUpdateOne) RemovePeoplePartnerUserIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemovePeoplePartnerUserIDs(ids...)
+	return _u
+}
+
+// RemovePeoplePartnerUsers removes "people_partner_users" edges to User entities.
+func (_u *UserUpdateOne) RemovePeoplePartnerUsers(v ...*User) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePeoplePartnerUserIDs(ids...)
+}
+
+// ClearPeoplePartner clears all "people_partner" edges to the User entity.
+func (_u *UserUpdateOne) ClearPeoplePartner() *UserUpdateOne {
+	_u.mutation.ClearPeoplePartner()
+	return _u
+}
+
+// RemovePeoplePartnerIDs removes the "people_partner" edge to User entities by IDs.
+func (_u *UserUpdateOne) RemovePeoplePartnerIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemovePeoplePartnerIDs(ids...)
+	return _u
+}
+
+// RemovePeoplePartner removes "people_partner" edges to User entities.
+func (_u *UserUpdateOne) RemovePeoplePartner(v ...*User) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePeoplePartnerIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -571,6 +824,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedTodosIDs(); len(nodes) > 0 && !_u.mutation.TodosCleared() {
@@ -584,6 +838,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -600,6 +855,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Todo
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -616,6 +872,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedModeratorUsersIDs(); len(nodes) > 0 && !_u.mutation.ModeratorUsersCleared() {
@@ -629,6 +886,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -645,6 +903,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.UserModerators
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -661,6 +920,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := _u.mutation.RemovedModeratorsIDs(); len(nodes) > 0 && !_u.mutation.ModeratorsCleared() {
@@ -674,6 +934,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -690,11 +951,110 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _u.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PeoplePartnerUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPeoplePartnerUsersIDs(); len(nodes) > 0 && !_u.mutation.PeoplePartnerUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PeoplePartnerUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.PeoplePartnerUsersTable,
+			Columns: user.PeoplePartnerUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.UserPeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PeoplePartnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPeoplePartnerIDs(); len(nodes) > 0 && !_u.mutation.PeoplePartnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PeoplePartnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PeoplePartnerTable,
+			Columns: user.PeoplePartnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.PeoplePartner
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	_spec.Node.Schema = _u.schemaConfig.User
+	ctx = internal.NewSchemaConfigContext(ctx, _u.schemaConfig)
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &User{config: _u.config}
 	_spec.Assign = _node.assignValues

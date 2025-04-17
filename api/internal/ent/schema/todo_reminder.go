@@ -39,7 +39,7 @@ func (TodoReminder) Annotations() []schema.Annotation {
 		field.ID("todo_id", "reminder_id"),
 		schema.Comment("A join table holding the relationships of todos to reminders"),
 		entsql.WithComments(true),
-		// entsql.Schema("todo"),
+		entsql.Schema("todo"),
 	}
 }
 

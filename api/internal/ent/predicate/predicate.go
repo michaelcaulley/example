@@ -9,6 +9,9 @@ import (
 // Moderator is the predicate function for moderator builders.
 type Moderator func(*sql.Selector)
 
+// PeoplePartner is the predicate function for peoplepartner builders.
+type PeoplePartner func(*sql.Selector)
+
 // Reminder is the predicate function for reminder builders.
 type Reminder func(*sql.Selector)
 

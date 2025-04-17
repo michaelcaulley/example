@@ -4,10 +4,9 @@ package ent
 
 import (
 	"context"
+	"example/internal/ent/peoplepartner"
 	"example/internal/ent/predicate"
-	"example/internal/ent/reminder"
-	"example/internal/ent/todo"
-	"example/internal/ent/todoreminder"
+	"example/internal/ent/user"
 	"fmt"
 	"math"
 
@@ -18,56 +17,56 @@ import (
 	"example/internal/ent/internal"
 )
 
-// TodoReminderQuery is the builder for querying TodoReminder entities.
-type TodoReminderQuery struct {
+// PeoplePartnerQuery is the builder for querying PeoplePartner entities.
+type PeoplePartnerQuery struct {
 	config
-	ctx          *QueryContext
-	order        []todoreminder.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.TodoReminder
-	withTodo     *TodoQuery
-	withReminder *ReminderQuery
-	loadTotal    []func(context.Context, []*TodoReminder) error
-	modifiers    []func(*sql.Selector)
+	ctx               *QueryContext
+	order             []peoplepartner.OrderOption
+	inters            []Interceptor
+	predicates        []predicate.PeoplePartner
+	withUser          *UserQuery
+	withPeoplePartner *UserQuery
+	loadTotal         []func(context.Context, []*PeoplePartner) error
+	modifiers         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the TodoReminderQuery builder.
-func (_q *TodoReminderQuery) Where(ps ...predicate.TodoReminder) *TodoReminderQuery {
+// Where adds a new predicate for the PeoplePartnerQuery builder.
+func (_q *PeoplePartnerQuery) Where(ps ...predicate.PeoplePartner) *PeoplePartnerQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *TodoReminderQuery) Limit(limit int) *TodoReminderQuery {
+func (_q *PeoplePartnerQuery) Limit(limit int) *PeoplePartnerQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *TodoReminderQuery) Offset(offset int) *TodoReminderQuery {
+func (_q *PeoplePartnerQuery) Offset(offset int) *PeoplePartnerQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *TodoReminderQuery) Unique(unique bool) *TodoReminderQuery {
+func (_q *PeoplePartnerQuery) Unique(unique bool) *PeoplePartnerQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *TodoReminderQuery) Order(o ...todoreminder.OrderOption) *TodoReminderQuery {
+func (_q *PeoplePartnerQuery) Order(o ...peoplepartner.OrderOption) *PeoplePartnerQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryTodo chains the current query on the "todo" edge.
-func (_q *TodoReminderQuery) QueryTodo() *TodoQuery {
-	query := (&TodoClient{config: _q.config}).Query()
+// QueryUser chains the current query on the "user" edge.
+func (_q *PeoplePartnerQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -77,22 +76,22 @@ func (_q *TodoReminderQuery) QueryTodo() *TodoQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(todoreminder.Table, todoreminder.TodoColumn, selector),
-			sqlgraph.To(todo.Table, todo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, todoreminder.TodoTable, todoreminder.TodoColumn),
+			sqlgraph.From(peoplepartner.Table, peoplepartner.UserColumn, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, peoplepartner.UserTable, peoplepartner.UserColumn),
 		)
 		schemaConfig := _q.schemaConfig
-		step.To.Schema = schemaConfig.Todo
-		step.Edge.Schema = schemaConfig.TodoReminder
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.PeoplePartner
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
-// QueryReminder chains the current query on the "reminder" edge.
-func (_q *TodoReminderQuery) QueryReminder() *ReminderQuery {
-	query := (&ReminderClient{config: _q.config}).Query()
+// QueryPeoplePartner chains the current query on the "people_partner" edge.
+func (_q *PeoplePartnerQuery) QueryPeoplePartner() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -102,34 +101,34 @@ func (_q *TodoReminderQuery) QueryReminder() *ReminderQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(todoreminder.Table, todoreminder.ReminderColumn, selector),
-			sqlgraph.To(reminder.Table, reminder.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, todoreminder.ReminderTable, todoreminder.ReminderColumn),
+			sqlgraph.From(peoplepartner.Table, peoplepartner.PeoplePartnerColumn, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, peoplepartner.PeoplePartnerTable, peoplepartner.PeoplePartnerColumn),
 		)
 		schemaConfig := _q.schemaConfig
-		step.To.Schema = schemaConfig.Reminder
-		step.Edge.Schema = schemaConfig.TodoReminder
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.PeoplePartner
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
-// First returns the first TodoReminder entity from the query.
-// Returns a *NotFoundError when no TodoReminder was found.
-func (_q *TodoReminderQuery) First(ctx context.Context) (*TodoReminder, error) {
+// First returns the first PeoplePartner entity from the query.
+// Returns a *NotFoundError when no PeoplePartner was found.
+func (_q *PeoplePartnerQuery) First(ctx context.Context) (*PeoplePartner, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{todoreminder.Label}
+		return nil, &NotFoundError{peoplepartner.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *TodoReminderQuery) FirstX(ctx context.Context) *TodoReminder {
+func (_q *PeoplePartnerQuery) FirstX(ctx context.Context) *PeoplePartner {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -137,10 +136,10 @@ func (_q *TodoReminderQuery) FirstX(ctx context.Context) *TodoReminder {
 	return node
 }
 
-// Only returns a single TodoReminder entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one TodoReminder entity is found.
-// Returns a *NotFoundError when no TodoReminder entities are found.
-func (_q *TodoReminderQuery) Only(ctx context.Context) (*TodoReminder, error) {
+// Only returns a single PeoplePartner entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one PeoplePartner entity is found.
+// Returns a *NotFoundError when no PeoplePartner entities are found.
+func (_q *PeoplePartnerQuery) Only(ctx context.Context) (*PeoplePartner, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -149,14 +148,14 @@ func (_q *TodoReminderQuery) Only(ctx context.Context) (*TodoReminder, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{todoreminder.Label}
+		return nil, &NotFoundError{peoplepartner.Label}
 	default:
-		return nil, &NotSingularError{todoreminder.Label}
+		return nil, &NotSingularError{peoplepartner.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *TodoReminderQuery) OnlyX(ctx context.Context) *TodoReminder {
+func (_q *PeoplePartnerQuery) OnlyX(ctx context.Context) *PeoplePartner {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -164,18 +163,18 @@ func (_q *TodoReminderQuery) OnlyX(ctx context.Context) *TodoReminder {
 	return node
 }
 
-// All executes the query and returns a list of TodoReminders.
-func (_q *TodoReminderQuery) All(ctx context.Context) ([]*TodoReminder, error) {
+// All executes the query and returns a list of PeoplePartners.
+func (_q *PeoplePartnerQuery) All(ctx context.Context) ([]*PeoplePartner, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*TodoReminder, *TodoReminderQuery]()
-	return withInterceptors[[]*TodoReminder](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*PeoplePartner, *PeoplePartnerQuery]()
+	return withInterceptors[[]*PeoplePartner](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *TodoReminderQuery) AllX(ctx context.Context) []*TodoReminder {
+func (_q *PeoplePartnerQuery) AllX(ctx context.Context) []*PeoplePartner {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -184,16 +183,16 @@ func (_q *TodoReminderQuery) AllX(ctx context.Context) []*TodoReminder {
 }
 
 // Count returns the count of the given query.
-func (_q *TodoReminderQuery) Count(ctx context.Context) (int, error) {
+func (_q *PeoplePartnerQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*TodoReminderQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*PeoplePartnerQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *TodoReminderQuery) CountX(ctx context.Context) int {
+func (_q *PeoplePartnerQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -202,7 +201,7 @@ func (_q *TodoReminderQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *TodoReminderQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *PeoplePartnerQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.First(ctx); {
 	case IsNotFound(err):
@@ -215,7 +214,7 @@ func (_q *TodoReminderQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *TodoReminderQuery) ExistX(ctx context.Context) bool {
+func (_q *PeoplePartnerQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -223,20 +222,20 @@ func (_q *TodoReminderQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the TodoReminderQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the PeoplePartnerQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *TodoReminderQuery) Clone() *TodoReminderQuery {
+func (_q *PeoplePartnerQuery) Clone() *PeoplePartnerQuery {
 	if _q == nil {
 		return nil
 	}
-	return &TodoReminderQuery{
-		config:       _q.config,
-		ctx:          _q.ctx.Clone(),
-		order:        append([]todoreminder.OrderOption{}, _q.order...),
-		inters:       append([]Interceptor{}, _q.inters...),
-		predicates:   append([]predicate.TodoReminder{}, _q.predicates...),
-		withTodo:     _q.withTodo.Clone(),
-		withReminder: _q.withReminder.Clone(),
+	return &PeoplePartnerQuery{
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]peoplepartner.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.PeoplePartner{}, _q.predicates...),
+		withUser:          _q.withUser.Clone(),
+		withPeoplePartner: _q.withPeoplePartner.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -244,25 +243,25 @@ func (_q *TodoReminderQuery) Clone() *TodoReminderQuery {
 	}
 }
 
-// WithTodo tells the query-builder to eager-load the nodes that are connected to
-// the "todo" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TodoReminderQuery) WithTodo(opts ...func(*TodoQuery)) *TodoReminderQuery {
-	query := (&TodoClient{config: _q.config}).Query()
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *PeoplePartnerQuery) WithUser(opts ...func(*UserQuery)) *PeoplePartnerQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withTodo = query
+	_q.withUser = query
 	return _q
 }
 
-// WithReminder tells the query-builder to eager-load the nodes that are connected to
-// the "reminder" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TodoReminderQuery) WithReminder(opts ...func(*ReminderQuery)) *TodoReminderQuery {
-	query := (&ReminderClient{config: _q.config}).Query()
+// WithPeoplePartner tells the query-builder to eager-load the nodes that are connected to
+// the "people_partner" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *PeoplePartnerQuery) WithPeoplePartner(opts ...func(*UserQuery)) *PeoplePartnerQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withReminder = query
+	_q.withPeoplePartner = query
 	return _q
 }
 
@@ -272,19 +271,19 @@ func (_q *TodoReminderQuery) WithReminder(opts ...func(*ReminderQuery)) *TodoRem
 // Example:
 //
 //	var v []struct {
-//		TodoID int `json:"todo_id,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.TodoReminder.Query().
-//		GroupBy(todoreminder.FieldTodoID).
+//	client.PeoplePartner.Query().
+//		GroupBy(peoplepartner.FieldUserID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *TodoReminderQuery) GroupBy(field string, fields ...string) *TodoReminderGroupBy {
+func (_q *PeoplePartnerQuery) GroupBy(field string, fields ...string) *PeoplePartnerGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &TodoReminderGroupBy{build: _q}
+	grbuild := &PeoplePartnerGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = todoreminder.Label
+	grbuild.label = peoplepartner.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -295,26 +294,26 @@ func (_q *TodoReminderQuery) GroupBy(field string, fields ...string) *TodoRemind
 // Example:
 //
 //	var v []struct {
-//		TodoID int `json:"todo_id,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //	}
 //
-//	client.TodoReminder.Query().
-//		Select(todoreminder.FieldTodoID).
+//	client.PeoplePartner.Query().
+//		Select(peoplepartner.FieldUserID).
 //		Scan(ctx, &v)
-func (_q *TodoReminderQuery) Select(fields ...string) *TodoReminderSelect {
+func (_q *PeoplePartnerQuery) Select(fields ...string) *PeoplePartnerSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &TodoReminderSelect{TodoReminderQuery: _q}
-	sbuild.label = todoreminder.Label
+	sbuild := &PeoplePartnerSelect{PeoplePartnerQuery: _q}
+	sbuild.label = peoplepartner.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a TodoReminderSelect configured with the given aggregations.
-func (_q *TodoReminderQuery) Aggregate(fns ...AggregateFunc) *TodoReminderSelect {
+// Aggregate returns a PeoplePartnerSelect configured with the given aggregations.
+func (_q *PeoplePartnerQuery) Aggregate(fns ...AggregateFunc) *PeoplePartnerSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *TodoReminderQuery) prepareQuery(ctx context.Context) error {
+func (_q *PeoplePartnerQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -326,7 +325,7 @@ func (_q *TodoReminderQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !todoreminder.ValidColumn(f) {
+		if !peoplepartner.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -340,25 +339,25 @@ func (_q *TodoReminderQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *TodoReminderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*TodoReminder, error) {
+func (_q *PeoplePartnerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PeoplePartner, error) {
 	var (
-		nodes       = []*TodoReminder{}
+		nodes       = []*PeoplePartner{}
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			_q.withTodo != nil,
-			_q.withReminder != nil,
+			_q.withUser != nil,
+			_q.withPeoplePartner != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*TodoReminder).scanValues(nil, columns)
+		return (*PeoplePartner).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &TodoReminder{config: _q.config}
+		node := &PeoplePartner{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	_spec.Node.Schema = _q.schemaConfig.TodoReminder
+	_spec.Node.Schema = _q.schemaConfig.PeoplePartner
 	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -372,15 +371,15 @@ func (_q *TodoReminderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withTodo; query != nil {
-		if err := _q.loadTodo(ctx, query, nodes, nil,
-			func(n *TodoReminder, e *Todo) { n.Edges.Todo = e }); err != nil {
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *PeoplePartner, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withReminder; query != nil {
-		if err := _q.loadReminder(ctx, query, nodes, nil,
-			func(n *TodoReminder, e *Reminder) { n.Edges.Reminder = e }); err != nil {
+	if query := _q.withPeoplePartner; query != nil {
+		if err := _q.loadPeoplePartner(ctx, query, nodes, nil,
+			func(n *PeoplePartner, e *User) { n.Edges.PeoplePartner = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -392,11 +391,11 @@ func (_q *TodoReminderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (_q *TodoReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nodes []*TodoReminder, init func(*TodoReminder), assign func(*TodoReminder, *Todo)) error {
+func (_q *PeoplePartnerQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*PeoplePartner, init func(*PeoplePartner), assign func(*PeoplePartner, *User)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*TodoReminder)
+	nodeids := make(map[int][]*PeoplePartner)
 	for i := range nodes {
-		fk := nodes[i].TodoID
+		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -405,7 +404,7 @@ func (_q *TodoReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nod
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(todo.IDIn(ids...))
+	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -413,7 +412,7 @@ func (_q *TodoReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nod
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "todo_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -421,11 +420,11 @@ func (_q *TodoReminderQuery) loadTodo(ctx context.Context, query *TodoQuery, nod
 	}
 	return nil
 }
-func (_q *TodoReminderQuery) loadReminder(ctx context.Context, query *ReminderQuery, nodes []*TodoReminder, init func(*TodoReminder), assign func(*TodoReminder, *Reminder)) error {
+func (_q *PeoplePartnerQuery) loadPeoplePartner(ctx context.Context, query *UserQuery, nodes []*PeoplePartner, init func(*PeoplePartner), assign func(*PeoplePartner, *User)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*TodoReminder)
+	nodeids := make(map[int][]*PeoplePartner)
 	for i := range nodes {
-		fk := nodes[i].ReminderID
+		fk := nodes[i].PeoplePartnerUserID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -434,7 +433,7 @@ func (_q *TodoReminderQuery) loadReminder(ctx context.Context, query *ReminderQu
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(reminder.IDIn(ids...))
+	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -442,7 +441,7 @@ func (_q *TodoReminderQuery) loadReminder(ctx context.Context, query *ReminderQu
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "reminder_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "people_partner_user_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -451,9 +450,9 @@ func (_q *TodoReminderQuery) loadReminder(ctx context.Context, query *ReminderQu
 	return nil
 }
 
-func (_q *TodoReminderQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *PeoplePartnerQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
-	_spec.Node.Schema = _q.schemaConfig.TodoReminder
+	_spec.Node.Schema = _q.schemaConfig.PeoplePartner
 	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -463,8 +462,8 @@ func (_q *TodoReminderQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *TodoReminderQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(todoreminder.Table, todoreminder.Columns, nil)
+func (_q *PeoplePartnerQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(peoplepartner.Table, peoplepartner.Columns, nil)
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -476,11 +475,11 @@ func (_q *TodoReminderQuery) querySpec() *sqlgraph.QuerySpec {
 		for i := range fields {
 			_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 		}
-		if _q.withTodo != nil {
-			_spec.Node.AddColumnOnce(todoreminder.FieldTodoID)
+		if _q.withUser != nil {
+			_spec.Node.AddColumnOnce(peoplepartner.FieldUserID)
 		}
-		if _q.withReminder != nil {
-			_spec.Node.AddColumnOnce(todoreminder.FieldReminderID)
+		if _q.withPeoplePartner != nil {
+			_spec.Node.AddColumnOnce(peoplepartner.FieldPeoplePartnerUserID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -506,12 +505,12 @@ func (_q *TodoReminderQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *TodoReminderQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *PeoplePartnerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(todoreminder.Table)
+	t1 := builder.Table(peoplepartner.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = todoreminder.Columns
+		columns = peoplepartner.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -521,7 +520,7 @@ func (_q *TodoReminderQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	t1.Schema(_q.schemaConfig.TodoReminder)
+	t1.Schema(_q.schemaConfig.PeoplePartner)
 	ctx = internal.NewSchemaConfigContext(ctx, _q.schemaConfig)
 	selector.WithContext(ctx)
 	for _, m := range _q.modifiers {
@@ -545,87 +544,87 @@ func (_q *TodoReminderQuery) sqlQuery(ctx context.Context) *sql.Selector {
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (_q *TodoReminderQuery) Modify(modifiers ...func(s *sql.Selector)) *TodoReminderSelect {
+func (_q *PeoplePartnerQuery) Modify(modifiers ...func(s *sql.Selector)) *PeoplePartnerSelect {
 	_q.modifiers = append(_q.modifiers, modifiers...)
 	return _q.Select()
 }
 
-// TodoReminderGroupBy is the group-by builder for TodoReminder entities.
-type TodoReminderGroupBy struct {
+// PeoplePartnerGroupBy is the group-by builder for PeoplePartner entities.
+type PeoplePartnerGroupBy struct {
 	selector
-	build *TodoReminderQuery
+	build *PeoplePartnerQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (trgb *TodoReminderGroupBy) Aggregate(fns ...AggregateFunc) *TodoReminderGroupBy {
-	trgb.fns = append(trgb.fns, fns...)
-	return trgb
+func (ppgb *PeoplePartnerGroupBy) Aggregate(fns ...AggregateFunc) *PeoplePartnerGroupBy {
+	ppgb.fns = append(ppgb.fns, fns...)
+	return ppgb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (trgb *TodoReminderGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, trgb.build.ctx, ent.OpQueryGroupBy)
-	if err := trgb.build.prepareQuery(ctx); err != nil {
+func (ppgb *PeoplePartnerGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, ppgb.build.ctx, ent.OpQueryGroupBy)
+	if err := ppgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TodoReminderQuery, *TodoReminderGroupBy](ctx, trgb.build, trgb, trgb.build.inters, v)
+	return scanWithInterceptors[*PeoplePartnerQuery, *PeoplePartnerGroupBy](ctx, ppgb.build, ppgb, ppgb.build.inters, v)
 }
 
-func (trgb *TodoReminderGroupBy) sqlScan(ctx context.Context, root *TodoReminderQuery, v any) error {
+func (ppgb *PeoplePartnerGroupBy) sqlScan(ctx context.Context, root *PeoplePartnerQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(trgb.fns))
-	for _, fn := range trgb.fns {
+	aggregation := make([]string, 0, len(ppgb.fns))
+	for _, fn := range ppgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*trgb.flds)+len(trgb.fns))
-		for _, f := range *trgb.flds {
+		columns := make([]string, 0, len(*ppgb.flds)+len(ppgb.fns))
+		for _, f := range *ppgb.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*trgb.flds...)...)
+	selector.GroupBy(selector.Columns(*ppgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := trgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := ppgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-// TodoReminderSelect is the builder for selecting fields of TodoReminder entities.
-type TodoReminderSelect struct {
-	*TodoReminderQuery
+// PeoplePartnerSelect is the builder for selecting fields of PeoplePartner entities.
+type PeoplePartnerSelect struct {
+	*PeoplePartnerQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (trs *TodoReminderSelect) Aggregate(fns ...AggregateFunc) *TodoReminderSelect {
-	trs.fns = append(trs.fns, fns...)
-	return trs
+func (pps *PeoplePartnerSelect) Aggregate(fns ...AggregateFunc) *PeoplePartnerSelect {
+	pps.fns = append(pps.fns, fns...)
+	return pps
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (trs *TodoReminderSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, trs.ctx, ent.OpQuerySelect)
-	if err := trs.prepareQuery(ctx); err != nil {
+func (pps *PeoplePartnerSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, pps.ctx, ent.OpQuerySelect)
+	if err := pps.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TodoReminderQuery, *TodoReminderSelect](ctx, trs.TodoReminderQuery, trs, trs.inters, v)
+	return scanWithInterceptors[*PeoplePartnerQuery, *PeoplePartnerSelect](ctx, pps.PeoplePartnerQuery, pps, pps.inters, v)
 }
 
-func (trs *TodoReminderSelect) sqlScan(ctx context.Context, root *TodoReminderQuery, v any) error {
+func (pps *PeoplePartnerSelect) sqlScan(ctx context.Context, root *PeoplePartnerQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(trs.fns))
-	for _, fn := range trs.fns {
+	aggregation := make([]string, 0, len(pps.fns))
+	for _, fn := range pps.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*trs.selector.flds); {
+	switch n := len(*pps.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -633,7 +632,7 @@ func (trs *TodoReminderSelect) sqlScan(ctx context.Context, root *TodoReminderQu
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := trs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := pps.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -641,7 +640,7 @@ func (trs *TodoReminderSelect) sqlScan(ctx context.Context, root *TodoReminderQu
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (trs *TodoReminderSelect) Modify(modifiers ...func(s *sql.Selector)) *TodoReminderSelect {
-	trs.modifiers = append(trs.modifiers, modifiers...)
-	return trs
+func (pps *PeoplePartnerSelect) Modify(modifiers ...func(s *sql.Selector)) *PeoplePartnerSelect {
+	pps.modifiers = append(pps.modifiers, modifiers...)
+	return pps
 }

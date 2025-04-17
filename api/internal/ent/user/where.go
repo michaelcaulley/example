@@ -7,6 +7,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
 )
 
 // ID filters vertices based on their ID field.
@@ -131,6 +133,9 @@ func HasTodos() predicate.User {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, TodosTable, TodosColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.Todo
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -139,6 +144,9 @@ func HasTodos() predicate.User {
 func HasTodosWith(preds ...predicate.Todo) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newTodosStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.Todo
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -154,6 +162,9 @@ func HasModeratorUsers() predicate.User {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, ModeratorUsersTable, ModeratorUsersPrimaryKey...),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserModerators
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -162,6 +173,9 @@ func HasModeratorUsers() predicate.User {
 func HasModeratorUsersWith(preds ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newModeratorUsersStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserModerators
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -177,6 +191,9 @@ func HasModerators() predicate.User {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, ModeratorsTable, ModeratorsPrimaryKey...),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -185,6 +202,67 @@ func HasModerators() predicate.User {
 func HasModeratorsWith(preds ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newModeratorsStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPeoplePartnerUsers applies the HasEdge predicate on the "people_partner_users" edge.
+func HasPeoplePartnerUsers() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PeoplePartnerUsersTable, PeoplePartnerUsersPrimaryKey...),
+		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserPeoplePartner
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPeoplePartnerUsersWith applies the HasEdge predicate on the "people_partner_users" edge with a given conditions (other predicates).
+func HasPeoplePartnerUsersWith(preds ...predicate.User) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPeoplePartnerUsersStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.UserPeoplePartner
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPeoplePartner applies the HasEdge predicate on the "people_partner" edge.
+func HasPeoplePartner() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PeoplePartnerTable, PeoplePartnerPrimaryKey...),
+		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.PeoplePartner
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPeoplePartnerWith applies the HasEdge predicate on the "people_partner" edge with a given conditions (other predicates).
+func HasPeoplePartnerWith(preds ...predicate.User) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPeoplePartnerStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.PeoplePartner
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -200,6 +278,9 @@ func HasModerator() predicate.User {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, ModeratorTable, ModeratorColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Moderator
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -208,6 +289,38 @@ func HasModerator() predicate.User {
 func HasModeratorWith(preds ...predicate.Moderator) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newModeratorStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.Moderator
+		step.Edge.Schema = schemaConfig.Moderator
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPeoplePartners applies the HasEdge predicate on the "people_partners" edge.
+func HasPeoplePartners() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, PeoplePartnersTable, PeoplePartnersColumn),
+		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.PeoplePartner
+		step.Edge.Schema = schemaConfig.PeoplePartner
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPeoplePartnersWith applies the HasEdge predicate on the "people_partners" edge with a given conditions (other predicates).
+func HasPeoplePartnersWith(preds ...predicate.PeoplePartner) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPeoplePartnersStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.PeoplePartner
+		step.Edge.Schema = schemaConfig.PeoplePartner
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
