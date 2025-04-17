@@ -6,9 +6,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Moderator is the predicate function for moderator builders.
-type Moderator func(*sql.Selector)
-
 // Reminder is the predicate function for reminder builders.
 type Reminder func(*sql.Selector)
 

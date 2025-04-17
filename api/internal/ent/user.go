@@ -28,22 +28,13 @@ type User struct {
 type UserEdges struct {
 	// Todos holds the value of the todos edge.
 	Todos []*Todo `json:"todos,omitempty"`
-	// ModeratorUsers holds the value of the moderator_users edge.
-	ModeratorUsers []*User `json:"moderator_users,omitempty"`
-	// Moderators holds the value of the moderators edge.
-	Moderators []*User `json:"moderators,omitempty"`
-	// Moderator holds the value of the moderator edge.
-	Moderator []*Moderator `json:"moderator,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [1]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [1]map[string]int
 
-	namedTodos          map[string][]*Todo
-	namedModeratorUsers map[string][]*User
-	namedModerators     map[string][]*User
-	namedModerator      map[string][]*Moderator
+	namedTodos map[string][]*Todo
 }
 
 // TodosOrErr returns the Todos value or an error if the edge
@@ -53,33 +44,6 @@ func (e UserEdges) TodosOrErr() ([]*Todo, error) {
 		return e.Todos, nil
 	}
 	return nil, &NotLoadedError{edge: "todos"}
-}
-
-// ModeratorUsersOrErr returns the ModeratorUsers value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ModeratorUsersOrErr() ([]*User, error) {
-	if e.loadedTypes[1] {
-		return e.ModeratorUsers, nil
-	}
-	return nil, &NotLoadedError{edge: "moderator_users"}
-}
-
-// ModeratorsOrErr returns the Moderators value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ModeratorsOrErr() ([]*User, error) {
-	if e.loadedTypes[2] {
-		return e.Moderators, nil
-	}
-	return nil, &NotLoadedError{edge: "moderators"}
-}
-
-// ModeratorOrErr returns the Moderator value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ModeratorOrErr() ([]*Moderator, error) {
-	if e.loadedTypes[3] {
-		return e.Moderator, nil
-	}
-	return nil, &NotLoadedError{edge: "moderator"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -136,21 +100,6 @@ func (_m *User) QueryTodos() *TodoQuery {
 	return NewUserClient(_m.config).QueryTodos(_m)
 }
 
-// QueryModeratorUsers queries the "moderator_users" edge of the User entity.
-func (_m *User) QueryModeratorUsers() *UserQuery {
-	return NewUserClient(_m.config).QueryModeratorUsers(_m)
-}
-
-// QueryModerators queries the "moderators" edge of the User entity.
-func (_m *User) QueryModerators() *UserQuery {
-	return NewUserClient(_m.config).QueryModerators(_m)
-}
-
-// QueryModerator queries the "moderator" edge of the User entity.
-func (_m *User) QueryModerator() *ModeratorQuery {
-	return NewUserClient(_m.config).QueryModerator(_m)
-}
-
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -201,78 +150,6 @@ func (_m *User) appendNamedTodos(name string, edges ...*Todo) {
 		_m.Edges.namedTodos[name] = []*Todo{}
 	} else {
 		_m.Edges.namedTodos[name] = append(_m.Edges.namedTodos[name], edges...)
-	}
-}
-
-// NamedModeratorUsers returns the ModeratorUsers named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedModeratorUsers(name string) ([]*User, error) {
-	if _m.Edges.namedModeratorUsers == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedModeratorUsers[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedModeratorUsers(name string, edges ...*User) {
-	if _m.Edges.namedModeratorUsers == nil {
-		_m.Edges.namedModeratorUsers = make(map[string][]*User)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedModeratorUsers[name] = []*User{}
-	} else {
-		_m.Edges.namedModeratorUsers[name] = append(_m.Edges.namedModeratorUsers[name], edges...)
-	}
-}
-
-// NamedModerators returns the Moderators named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedModerators(name string) ([]*User, error) {
-	if _m.Edges.namedModerators == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedModerators[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedModerators(name string, edges ...*User) {
-	if _m.Edges.namedModerators == nil {
-		_m.Edges.namedModerators = make(map[string][]*User)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedModerators[name] = []*User{}
-	} else {
-		_m.Edges.namedModerators[name] = append(_m.Edges.namedModerators[name], edges...)
-	}
-}
-
-// NamedModerator returns the Moderator named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedModerator(name string) ([]*Moderator, error) {
-	if _m.Edges.namedModerator == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedModerator[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedModerator(name string, edges ...*Moderator) {
-	if _m.Edges.namedModerator == nil {
-		_m.Edges.namedModerator = make(map[string][]*Moderator)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedModerator[name] = []*Moderator{}
-	} else {
-		_m.Edges.namedModerator[name] = append(_m.Edges.namedModerator[name], edges...)
 	}
 }
 

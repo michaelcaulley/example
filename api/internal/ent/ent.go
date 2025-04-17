@@ -5,7 +5,6 @@ package ent
 import (
 	"context"
 	"errors"
-	"example/internal/ent/moderator"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
 	"example/internal/ent/todoreminder"
@@ -77,7 +76,6 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			moderator.Table:    moderator.ValidColumn,
 			reminder.Table:     reminder.ValidColumn,
 			todo.Table:         todo.ValidColumn,
 			todoreminder.Table: todoreminder.ValidColumn,

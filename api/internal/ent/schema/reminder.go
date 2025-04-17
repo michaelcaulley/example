@@ -39,9 +39,9 @@ func (Reminder) Indexes() []ent.Index {
 // Annotations of the Reminder.
 func (Reminder) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		//entsql.Schema("todo"),
 		entsql.Table("reminders"),
 		schema.Comment("Reminder for a user to take action."),
 		entsql.WithComments(true),
+		// entsql.Schema("todo"),
 	}
 }

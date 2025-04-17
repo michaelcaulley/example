@@ -36,11 +36,10 @@ func (TodoReminder) Edges() []ent.Edge {
 
 func (TodoReminder) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		//entsql.Schema("todo"),
-		entsql.Table("todo_reminders"),
 		field.ID("todo_id", "reminder_id"),
 		schema.Comment("A join table holding the relationships of todos to reminders"),
 		entsql.WithComments(true),
+		// entsql.Schema("todo"),
 	}
 }
 

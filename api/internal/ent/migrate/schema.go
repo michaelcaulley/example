@@ -9,43 +9,6 @@ import (
 )
 
 var (
-	// ModeratorsColumns holds the columns for the "moderators" table.
-	ModeratorsColumns = []*schema.Column{
-		{Name: "user_id", Type: field.TypeInt},
-		{Name: "moderator_user_id", Type: field.TypeInt},
-	}
-	// ModeratorsTable holds the schema information for the "moderators" table.
-	ModeratorsTable = &schema.Table{
-		Name:       "moderators",
-		Columns:    ModeratorsColumns,
-		PrimaryKey: []*schema.Column{ModeratorsColumns[0], ModeratorsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "moderators_users_user",
-				Columns:    []*schema.Column{ModeratorsColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "moderators_users_moderator",
-				Columns:    []*schema.Column{ModeratorsColumns[1]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "moderator_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{ModeratorsColumns[0]},
-			},
-			{
-				Name:    "moderator_moderator_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{ModeratorsColumns[1]},
-			},
-		},
-	}
 	// RemindersColumns holds the columns for the "reminders" table.
 	RemindersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -126,7 +89,6 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		ModeratorsTable,
 		RemindersTable,
 		TodosTable,
 		TodoRemindersTable,
@@ -135,29 +97,20 @@ var (
 )
 
 func init() {
-	ModeratorsTable.ForeignKeys[0].RefTable = UsersTable
-	ModeratorsTable.ForeignKeys[1].RefTable = UsersTable
-	ModeratorsTable.Annotation = &entsql.Annotation{
-		Table:          "moderators",
-		IncrementStart: func(i int) *int { return &i }(17179869184),
-	}
 	RemindersTable.Annotation = &entsql.Annotation{
 		Table:          "reminders",
 		IncrementStart: func(i int) *int { return &i }(8589934592),
 	}
 	TodosTable.ForeignKeys[0].RefTable = UsersTable
 	TodosTable.Annotation = &entsql.Annotation{
-		Table:          "todos",
 		IncrementStart: func(i int) *int { return &i }(4294967296),
 	}
 	TodoRemindersTable.ForeignKeys[0].RefTable = TodosTable
 	TodoRemindersTable.ForeignKeys[1].RefTable = RemindersTable
 	TodoRemindersTable.Annotation = &entsql.Annotation{
-		Table:          "todo_reminders",
 		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}
 	UsersTable.Annotation = &entsql.Annotation{
-		Table:          "users",
 		IncrementStart: func(i int) *int { return &i }(0),
 	}
 }

@@ -16,12 +16,6 @@ const (
 	FieldName = "name"
 	// EdgeTodos holds the string denoting the todos edge name in mutations.
 	EdgeTodos = "todos"
-	// EdgeModeratorUsers holds the string denoting the moderator_users edge name in mutations.
-	EdgeModeratorUsers = "moderator_users"
-	// EdgeModerators holds the string denoting the moderators edge name in mutations.
-	EdgeModerators = "moderators"
-	// EdgeModerator holds the string denoting the moderator edge name in mutations.
-	EdgeModerator = "moderator"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// TodosTable is the table that holds the todos relation/edge.
@@ -31,17 +25,6 @@ const (
 	TodosInverseTable = "todos"
 	// TodosColumn is the table column denoting the todos relation/edge.
 	TodosColumn = "owner_id"
-	// ModeratorUsersTable is the table that holds the moderator_users relation/edge. The primary key declared below.
-	ModeratorUsersTable = "moderators"
-	// ModeratorsTable is the table that holds the moderators relation/edge. The primary key declared below.
-	ModeratorsTable = "moderators"
-	// ModeratorTable is the table that holds the moderator relation/edge.
-	ModeratorTable = "moderators"
-	// ModeratorInverseTable is the table name for the Moderator entity.
-	// It exists in this package in order to avoid circular dependency with the "moderator" package.
-	ModeratorInverseTable = "moderators"
-	// ModeratorColumn is the table column denoting the moderator relation/edge.
-	ModeratorColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -49,15 +32,6 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 }
-
-var (
-	// ModeratorUsersPrimaryKey and ModeratorUsersColumn2 are the table columns denoting the
-	// primary key for the moderator_users relation (M2M).
-	ModeratorUsersPrimaryKey = []string{"user_id", "moderator_user_id"}
-	// ModeratorsPrimaryKey and ModeratorsColumn2 are the table columns denoting the
-	// primary key for the moderators relation (M2M).
-	ModeratorsPrimaryKey = []string{"user_id", "moderator_user_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -95,73 +69,10 @@ func ByTodos(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newTodosStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByModeratorUsersCount orders the results by moderator_users count.
-func ByModeratorUsersCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newModeratorUsersStep(), opts...)
-	}
-}
-
-// ByModeratorUsers orders the results by moderator_users terms.
-func ByModeratorUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newModeratorUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByModeratorsCount orders the results by moderators count.
-func ByModeratorsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newModeratorsStep(), opts...)
-	}
-}
-
-// ByModerators orders the results by moderators terms.
-func ByModerators(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newModeratorsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByModeratorCount orders the results by moderator count.
-func ByModeratorCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newModeratorStep(), opts...)
-	}
-}
-
-// ByModerator orders the results by moderator terms.
-func ByModerator(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newModeratorStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newTodosStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TodosInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, TodosTable, TodosColumn),
-	)
-}
-func newModeratorUsersStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, ModeratorUsersTable, ModeratorUsersPrimaryKey...),
-	)
-}
-func newModeratorsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, ModeratorsTable, ModeratorsPrimaryKey...),
-	)
-}
-func newModeratorStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ModeratorInverseTable, ModeratorColumn),
-		sqlgraph.Edge(sqlgraph.O2M, true, ModeratorTable, ModeratorColumn),
 	)
 }

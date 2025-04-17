@@ -543,14 +543,6 @@ type UserWhereInput struct {
 	// "todos" edge predicates.
 	HasTodos     *bool             `json:"hasTodos,omitempty"`
 	HasTodosWith []*TodoWhereInput `json:"hasTodosWith,omitempty"`
-
-	// "moderator_users" edge predicates.
-	HasModeratorUsers     *bool             `json:"hasModeratorUsers,omitempty"`
-	HasModeratorUsersWith []*UserWhereInput `json:"hasModeratorUsersWith,omitempty"`
-
-	// "moderators" edge predicates.
-	HasModerators     *bool             `json:"hasModerators,omitempty"`
-	HasModeratorsWith []*UserWhereInput `json:"hasModeratorsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -705,42 +697,6 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasTodosWith(with...))
-	}
-	if i.HasModeratorUsers != nil {
-		p := user.HasModeratorUsers()
-		if !*i.HasModeratorUsers {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasModeratorUsersWith) > 0 {
-		with := make([]predicate.User, 0, len(i.HasModeratorUsersWith))
-		for _, w := range i.HasModeratorUsersWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasModeratorUsersWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasModeratorUsersWith(with...))
-	}
-	if i.HasModerators != nil {
-		p := user.HasModerators()
-		if !*i.HasModerators {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasModeratorsWith) > 0 {
-		with := make([]predicate.User, 0, len(i.HasModeratorsWith))
-		for _, w := range i.HasModeratorsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasModeratorsWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasModeratorsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

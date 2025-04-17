@@ -11,7 +11,6 @@ import (
 
 	"example/internal/ent/migrate"
 
-	"example/internal/ent/moderator"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
 	"example/internal/ent/todoreminder"
@@ -30,8 +29,6 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Moderator is the client for interacting with the Moderator builders.
-	Moderator *ModeratorClient
 	// Reminder is the client for interacting with the Reminder builders.
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
@@ -51,7 +48,6 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Moderator = NewModeratorClient(c.config)
 	c.Reminder = NewReminderClient(c.config)
 	c.Todo = NewTodoClient(c.config)
 	c.TodoReminder = NewTodoReminderClient(c.config)
@@ -148,7 +144,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:          ctx,
 		config:       cfg,
-		Moderator:    NewModeratorClient(cfg),
 		Reminder:     NewReminderClient(cfg),
 		Todo:         NewTodoClient(cfg),
 		TodoReminder: NewTodoReminderClient(cfg),
@@ -172,7 +167,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:          ctx,
 		config:       cfg,
-		Moderator:    NewModeratorClient(cfg),
 		Reminder:     NewReminderClient(cfg),
 		Todo:         NewTodoClient(cfg),
 		TodoReminder: NewTodoReminderClient(cfg),
@@ -183,7 +177,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Moderator.
+//		Reminder.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -205,7 +199,6 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Moderator.Use(hooks...)
 	c.Reminder.Use(hooks...)
 	c.Todo.Use(hooks...)
 	c.TodoReminder.Use(hooks...)
@@ -215,7 +208,6 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Moderator.Intercept(interceptors...)
 	c.Reminder.Intercept(interceptors...)
 	c.Todo.Intercept(interceptors...)
 	c.TodoReminder.Intercept(interceptors...)
@@ -225,8 +217,6 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
-	case *ModeratorMutation:
-		return c.Moderator.mutate(ctx, m)
 	case *ReminderMutation:
 		return c.Reminder.mutate(ctx, m)
 	case *TodoMutation:
@@ -237,122 +227,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
-	}
-}
-
-// ModeratorClient is a client for the Moderator schema.
-type ModeratorClient struct {
-	config
-}
-
-// NewModeratorClient returns a client for the Moderator from the given config.
-func NewModeratorClient(c config) *ModeratorClient {
-	return &ModeratorClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `moderator.Hooks(f(g(h())))`.
-func (c *ModeratorClient) Use(hooks ...Hook) {
-	c.hooks.Moderator = append(c.hooks.Moderator, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `moderator.Intercept(f(g(h())))`.
-func (c *ModeratorClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Moderator = append(c.inters.Moderator, interceptors...)
-}
-
-// Create returns a builder for creating a Moderator entity.
-func (c *ModeratorClient) Create() *ModeratorCreate {
-	mutation := newModeratorMutation(c.config, OpCreate)
-	return &ModeratorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Moderator entities.
-func (c *ModeratorClient) CreateBulk(builders ...*ModeratorCreate) *ModeratorCreateBulk {
-	return &ModeratorCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ModeratorClient) MapCreateBulk(slice any, setFunc func(*ModeratorCreate, int)) *ModeratorCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ModeratorCreateBulk{err: fmt.Errorf("calling to ModeratorClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ModeratorCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ModeratorCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Moderator.
-func (c *ModeratorClient) Update() *ModeratorUpdate {
-	mutation := newModeratorMutation(c.config, OpUpdate)
-	return &ModeratorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ModeratorClient) UpdateOne(_m *Moderator) *ModeratorUpdateOne {
-	mutation := newModeratorMutation(c.config, OpUpdateOne)
-	mutation.user = &_m.UserID
-	mutation.moderator = &_m.ModeratorUserID
-	return &ModeratorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Moderator.
-func (c *ModeratorClient) Delete() *ModeratorDelete {
-	mutation := newModeratorMutation(c.config, OpDelete)
-	return &ModeratorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Query returns a query builder for Moderator.
-func (c *ModeratorClient) Query() *ModeratorQuery {
-	return &ModeratorQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeModerator},
-		inters: c.Interceptors(),
-	}
-}
-
-// QueryUser queries the user edge of a Moderator.
-func (c *ModeratorClient) QueryUser(_m *Moderator) *UserQuery {
-	return c.Query().
-		Where(moderator.UserID(_m.UserID), moderator.ModeratorUserID(_m.ModeratorUserID)).
-		QueryUser()
-}
-
-// QueryModerator queries the moderator edge of a Moderator.
-func (c *ModeratorClient) QueryModerator(_m *Moderator) *UserQuery {
-	return c.Query().
-		Where(moderator.UserID(_m.UserID), moderator.ModeratorUserID(_m.ModeratorUserID)).
-		QueryModerator()
-}
-
-// Hooks returns the client hooks.
-func (c *ModeratorClient) Hooks() []Hook {
-	return c.hooks.Moderator
-}
-
-// Interceptors returns the client interceptors.
-func (c *ModeratorClient) Interceptors() []Interceptor {
-	return c.inters.Moderator
-}
-
-func (c *ModeratorClient) mutate(ctx context.Context, m *ModeratorMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ModeratorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ModeratorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ModeratorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ModeratorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Moderator mutation op: %q", m.Op())
 	}
 }
 
@@ -943,54 +817,6 @@ func (c *UserClient) QueryTodos(_m *User) *TodoQuery {
 	return query
 }
 
-// QueryModeratorUsers queries the moderator_users edge of a User.
-func (c *UserClient) QueryModeratorUsers(_m *User) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.ModeratorUsersTable, user.ModeratorUsersPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryModerators queries the moderators edge of a User.
-func (c *UserClient) QueryModerators(_m *User) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, user.ModeratorsTable, user.ModeratorsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryModerator queries the moderator edge of a User.
-func (c *UserClient) QueryModerator(_m *User) *ModeratorQuery {
-	query := (&ModeratorClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(moderator.Table, moderator.UserColumn),
-			sqlgraph.Edge(sqlgraph.O2M, true, user.ModeratorTable, user.ModeratorColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1019,10 +845,10 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Moderator, Reminder, Todo, TodoReminder, User []ent.Hook
+		Reminder, Todo, TodoReminder, User []ent.Hook
 	}
 	inters struct {
-		Moderator, Reminder, Todo, TodoReminder, User []ent.Interceptor
+		Reminder, Todo, TodoReminder, User []ent.Interceptor
 	}
 )
 

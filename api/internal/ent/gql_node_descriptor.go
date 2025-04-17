@@ -132,7 +132,7 @@ func (_m *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "User",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.Name); err != nil {
@@ -150,26 +150,6 @@ func (_m *User) Node(ctx context.Context) (node *Node, err error) {
 	err = _m.QueryTodos().
 		Select(todo.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "User",
-		Name: "moderator_users",
-	}
-	err = _m.QueryModeratorUsers().
-		Select(user.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "User",
-		Name: "moderators",
-	}
-	err = _m.QueryModerators().
-		Select(user.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}

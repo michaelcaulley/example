@@ -58,36 +58,6 @@ func (_u *UserUpdate) AddTodos(v ...*Todo) *UserUpdate {
 	return _u.AddTodoIDs(ids...)
 }
 
-// AddModeratorUserIDs adds the "moderator_users" edge to the User entity by IDs.
-func (_u *UserUpdate) AddModeratorUserIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddModeratorUserIDs(ids...)
-	return _u
-}
-
-// AddModeratorUsers adds the "moderator_users" edges to the User entity.
-func (_u *UserUpdate) AddModeratorUsers(v ...*User) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddModeratorUserIDs(ids...)
-}
-
-// AddModeratorIDs adds the "moderators" edge to the User entity by IDs.
-func (_u *UserUpdate) AddModeratorIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddModeratorIDs(ids...)
-	return _u
-}
-
-// AddModerators adds the "moderators" edges to the User entity.
-func (_u *UserUpdate) AddModerators(v ...*User) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddModeratorIDs(ids...)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -112,48 +82,6 @@ func (_u *UserUpdate) RemoveTodos(v ...*Todo) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveTodoIDs(ids...)
-}
-
-// ClearModeratorUsers clears all "moderator_users" edges to the User entity.
-func (_u *UserUpdate) ClearModeratorUsers() *UserUpdate {
-	_u.mutation.ClearModeratorUsers()
-	return _u
-}
-
-// RemoveModeratorUserIDs removes the "moderator_users" edge to User entities by IDs.
-func (_u *UserUpdate) RemoveModeratorUserIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveModeratorUserIDs(ids...)
-	return _u
-}
-
-// RemoveModeratorUsers removes "moderator_users" edges to User entities.
-func (_u *UserUpdate) RemoveModeratorUsers(v ...*User) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveModeratorUserIDs(ids...)
-}
-
-// ClearModerators clears all "moderators" edges to the User entity.
-func (_u *UserUpdate) ClearModerators() *UserUpdate {
-	_u.mutation.ClearModerators()
-	return _u
-}
-
-// RemoveModeratorIDs removes the "moderators" edge to User entities by IDs.
-func (_u *UserUpdate) RemoveModeratorIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveModeratorIDs(ids...)
-	return _u
-}
-
-// RemoveModerators removes "moderators" edges to User entities.
-func (_u *UserUpdate) RemoveModerators(v ...*User) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveModeratorIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -246,96 +174,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ModeratorUsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedModeratorUsersIDs(); len(nodes) > 0 && !_u.mutation.ModeratorUsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ModeratorUsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.ModeratorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedModeratorsIDs(); len(nodes) > 0 && !_u.mutation.ModeratorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ModeratorsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -387,36 +225,6 @@ func (_u *UserUpdateOne) AddTodos(v ...*Todo) *UserUpdateOne {
 	return _u.AddTodoIDs(ids...)
 }
 
-// AddModeratorUserIDs adds the "moderator_users" edge to the User entity by IDs.
-func (_u *UserUpdateOne) AddModeratorUserIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddModeratorUserIDs(ids...)
-	return _u
-}
-
-// AddModeratorUsers adds the "moderator_users" edges to the User entity.
-func (_u *UserUpdateOne) AddModeratorUsers(v ...*User) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddModeratorUserIDs(ids...)
-}
-
-// AddModeratorIDs adds the "moderators" edge to the User entity by IDs.
-func (_u *UserUpdateOne) AddModeratorIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddModeratorIDs(ids...)
-	return _u
-}
-
-// AddModerators adds the "moderators" edges to the User entity.
-func (_u *UserUpdateOne) AddModerators(v ...*User) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddModeratorIDs(ids...)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -441,48 +249,6 @@ func (_u *UserUpdateOne) RemoveTodos(v ...*Todo) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveTodoIDs(ids...)
-}
-
-// ClearModeratorUsers clears all "moderator_users" edges to the User entity.
-func (_u *UserUpdateOne) ClearModeratorUsers() *UserUpdateOne {
-	_u.mutation.ClearModeratorUsers()
-	return _u
-}
-
-// RemoveModeratorUserIDs removes the "moderator_users" edge to User entities by IDs.
-func (_u *UserUpdateOne) RemoveModeratorUserIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveModeratorUserIDs(ids...)
-	return _u
-}
-
-// RemoveModeratorUsers removes "moderator_users" edges to User entities.
-func (_u *UserUpdateOne) RemoveModeratorUsers(v ...*User) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveModeratorUserIDs(ids...)
-}
-
-// ClearModerators clears all "moderators" edges to the User entity.
-func (_u *UserUpdateOne) ClearModerators() *UserUpdateOne {
-	_u.mutation.ClearModerators()
-	return _u
-}
-
-// RemoveModeratorIDs removes the "moderators" edge to User entities by IDs.
-func (_u *UserUpdateOne) RemoveModeratorIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveModeratorIDs(ids...)
-	return _u
-}
-
-// RemoveModerators removes "moderators" edges to User entities.
-func (_u *UserUpdateOne) RemoveModerators(v ...*User) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveModeratorIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -598,96 +364,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.ModeratorUsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedModeratorUsersIDs(); len(nodes) > 0 && !_u.mutation.ModeratorUsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ModeratorUsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.ModeratorUsersTable,
-			Columns: user.ModeratorUsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.ModeratorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedModeratorsIDs(); len(nodes) > 0 && !_u.mutation.ModeratorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ModeratorsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.ModeratorsTable,
-			Columns: user.ModeratorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

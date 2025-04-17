@@ -59,35 +59,3 @@ func (_m *User) Todos(
 	}
 	return _m.QueryTodos().Paginate(ctx, after, first, before, last, opts...)
 }
-
-func (_m *User) ModeratorUsers(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *UserWhereInput,
-) (*UserConnection, error) {
-	opts := []UserPaginateOption{
-		WithUserFilter(where.Filter),
-	}
-	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
-	if nodes, err := _m.NamedModeratorUsers(alias); err == nil || hasTotalCount {
-		pager, err := newUserPager(opts, last != nil)
-		if err != nil {
-			return nil, err
-		}
-		conn := &UserConnection{Edges: []*UserEdge{}, TotalCount: totalCount}
-		conn.build(nodes, pager, after, first, before, last)
-		return conn, nil
-	}
-	return _m.QueryModeratorUsers().Paginate(ctx, after, first, before, last, opts...)
-}
-
-func (_m *User) Moderators(ctx context.Context) (result []*User, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedModerators(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.ModeratorsOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryModerators().All(ctx)
-	}
-	return result, err
-}
