@@ -113,6 +113,7 @@ func (_c *TodoReminderCreate) createSpec() (*TodoReminder, *sqlgraph.CreateSpec)
 		_node = &TodoReminder{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(todoreminder.Table, nil)
 	)
+	_spec.Schema = _c.schemaConfig.TodoReminder
 	_spec.OnConflict = _c.conflict
 	if nodes := _c.mutation.TodoIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -125,6 +126,7 @@ func (_c *TodoReminderCreate) createSpec() (*TodoReminder, *sqlgraph.CreateSpec)
 				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _c.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -142,6 +144,7 @@ func (_c *TodoReminderCreate) createSpec() (*TodoReminder, *sqlgraph.CreateSpec)
 				IDSpec: sqlgraph.NewFieldSpec(reminder.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _c.schemaConfig.TodoReminder
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}

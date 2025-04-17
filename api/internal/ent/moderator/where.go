@@ -7,6 +7,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
 )
 
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
@@ -66,6 +68,9 @@ func HasUser() predicate.Moderator {
 			sqlgraph.From(Table, UserColumn),
 			sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -74,6 +79,9 @@ func HasUser() predicate.Moderator {
 func HasUserWith(preds ...predicate.User) predicate.Moderator {
 	return predicate.Moderator(func(s *sql.Selector) {
 		step := newUserStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -89,6 +97,9 @@ func HasModerator() predicate.Moderator {
 			sqlgraph.From(Table, ModeratorColumn),
 			sqlgraph.Edge(sqlgraph.M2O, false, ModeratorTable, ModeratorColumn),
 		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
@@ -97,6 +108,9 @@ func HasModerator() predicate.Moderator {
 func HasModeratorWith(preds ...predicate.User) predicate.Moderator {
 	return predicate.Moderator(func(s *sql.Selector) {
 		step := newModeratorStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Moderator
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

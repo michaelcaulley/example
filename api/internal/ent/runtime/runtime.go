@@ -3,9 +3,13 @@
 package runtime
 
 import (
+	"context"
 	"example/internal/ent/reminder"
 	"example/internal/ent/schema"
 	"example/internal/ent/todo"
+
+	"entgo.io/ent"
+	"entgo.io/ent/privacy"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -15,6 +19,15 @@ func init() {
 	reminderMixin := schema.Reminder{}.Mixin()
 	reminderMixinHooks0 := reminderMixin[0].Hooks()
 	reminder.Hooks[0] = reminderMixinHooks0[0]
+	todo.Policy = privacy.NewPolicies(schema.Todo{})
+	todo.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := todo.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
 	todoFields := schema.Todo{}.Fields()
 	_ = todoFields
 	// todoDescText is the schema descriptor for text field.
@@ -38,5 +51,6 @@ func init() {
 }
 
 const (
-	Version = "v0.14.4" // Version of ent codegen.
+	Version = "v0.14.6-0.20251007203935-4d347cae9748"           // Version of ent codegen.
+	Sum     = "h1:BZ4Z3uXULkHRJxeskLrloXaLyuR2jyIBh3fhcJ1aUfw=" // Sum of ent codegen.
 )

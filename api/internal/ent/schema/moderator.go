@@ -47,7 +47,7 @@ func (Moderator) Indexes() []ent.Index {
 
 func (Moderator) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		// entsql.Schema("app"),
+		entsql.Schema("app"),
 		entsql.Table("moderators"),
 		field.ID("user_id", "moderator_user_id"),
 		entsql.WithComments(true),

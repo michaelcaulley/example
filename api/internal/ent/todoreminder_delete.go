@@ -5,10 +5,12 @@ package ent
 import (
 	"context"
 	"example/internal/ent/predicate"
-	"example/internal/ent/todoreminder"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+
+	"example/internal/ent/internal"
+	"example/internal/ent/todoreminder"
 )
 
 // TodoReminderDelete is the builder for deleting a TodoReminder entity.
@@ -40,6 +42,8 @@ func (_d *TodoReminderDelete) ExecX(ctx context.Context) int {
 
 func (_d *TodoReminderDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(todoreminder.Table, nil)
+	_spec.Node.Schema = _d.schemaConfig.TodoReminder
+	ctx = internal.NewSchemaConfigContext(ctx, _d.schemaConfig)
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

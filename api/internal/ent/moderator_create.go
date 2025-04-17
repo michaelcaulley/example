@@ -118,6 +118,7 @@ func (_c *ModeratorCreate) createSpec() (*Moderator, *sqlgraph.CreateSpec) {
 		_node = &Moderator{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(moderator.Table, nil)
 	)
+	_spec.Schema = _c.schemaConfig.Moderator
 	_spec.OnConflict = _c.conflict
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -130,6 +131,7 @@ func (_c *ModeratorCreate) createSpec() (*Moderator, *sqlgraph.CreateSpec) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _c.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -147,6 +149,7 @@ func (_c *ModeratorCreate) createSpec() (*Moderator, *sqlgraph.CreateSpec) {
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
+		edge.Schema = _c.schemaConfig.Moderator
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}

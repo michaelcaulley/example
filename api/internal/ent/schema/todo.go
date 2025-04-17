@@ -1,9 +1,12 @@
 package schema
 
 import (
+	"example/internal/ent/todo/rule"
+
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/privacy"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -62,10 +65,22 @@ func (Todo) Indexes() []ent.Index {
 	}
 }
 
+func (Todo) Policy() ent.Policy {
+	return privacy.Policy{
+		Mutation: privacy.MutationPolicy{
+			rule.TodoCreationRule(),
+			privacy.AlwaysAllowRule(),
+		},
+		Query: privacy.QueryPolicy{
+			privacy.AlwaysAllowRule(),
+		},
+	}
+}
+
 // Annotations of the Todo.
 func (Todo) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		//entsql.Schema("todo"),
+		entsql.Schema("todo"),
 		entsql.Table("todos"),
 		entgql.RelayConnection(),
 		entgql.QueryField(),
