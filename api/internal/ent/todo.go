@@ -36,16 +36,22 @@ type TodoEdges struct {
 	Owner *User `json:"owner,omitempty"`
 	// Reminders holds the value of the reminders edge.
 	Reminders []*Reminder `json:"reminders,omitempty"`
+	// Groups holds the value of the groups edge.
+	Groups []*TodoGroup `json:"groups,omitempty"`
 	// TodoReminders holds the value of the todo_reminders edge.
 	TodoReminders []*TodoReminder `json:"todo_reminders,omitempty"`
+	// GroupedTodos holds the value of the grouped_todos edge.
+	GroupedTodos []*TodoToTodoGroupAssociation `json:"grouped_todos,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [4]map[string]int
 
 	namedReminders     map[string][]*Reminder
+	namedGroups        map[string][]*TodoGroup
 	namedTodoReminders map[string][]*TodoReminder
+	namedGroupedTodos  map[string][]*TodoToTodoGroupAssociation
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -68,13 +74,31 @@ func (e TodoEdges) RemindersOrErr() ([]*Reminder, error) {
 	return nil, &NotLoadedError{edge: "reminders"}
 }
 
+// GroupsOrErr returns the Groups value or an error if the edge
+// was not loaded in eager-loading.
+func (e TodoEdges) GroupsOrErr() ([]*TodoGroup, error) {
+	if e.loadedTypes[2] {
+		return e.Groups, nil
+	}
+	return nil, &NotLoadedError{edge: "groups"}
+}
+
 // TodoRemindersOrErr returns the TodoReminders value or an error if the edge
 // was not loaded in eager-loading.
 func (e TodoEdges) TodoRemindersOrErr() ([]*TodoReminder, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.TodoReminders, nil
 	}
 	return nil, &NotLoadedError{edge: "todo_reminders"}
+}
+
+// GroupedTodosOrErr returns the GroupedTodos value or an error if the edge
+// was not loaded in eager-loading.
+func (e TodoEdges) GroupedTodosOrErr() ([]*TodoToTodoGroupAssociation, error) {
+	if e.loadedTypes[4] {
+		return e.GroupedTodos, nil
+	}
+	return nil, &NotLoadedError{edge: "grouped_todos"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -151,9 +175,19 @@ func (_m *Todo) QueryReminders() *ReminderQuery {
 	return NewTodoClient(_m.config).QueryReminders(_m)
 }
 
+// QueryGroups queries the "groups" edge of the Todo entity.
+func (_m *Todo) QueryGroups() *TodoGroupQuery {
+	return NewTodoClient(_m.config).QueryGroups(_m)
+}
+
 // QueryTodoReminders queries the "todo_reminders" edge of the Todo entity.
 func (_m *Todo) QueryTodoReminders() *TodoReminderQuery {
 	return NewTodoClient(_m.config).QueryTodoReminders(_m)
+}
+
+// QueryGroupedTodos queries the "grouped_todos" edge of the Todo entity.
+func (_m *Todo) QueryGroupedTodos() *TodoToTodoGroupAssociationQuery {
+	return NewTodoClient(_m.config).QueryGroupedTodos(_m)
 }
 
 // Update returns a builder for updating this Todo.
@@ -217,6 +251,30 @@ func (_m *Todo) appendNamedReminders(name string, edges ...*Reminder) {
 	}
 }
 
+// NamedGroups returns the Groups named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Todo) NamedGroups(name string) ([]*TodoGroup, error) {
+	if _m.Edges.namedGroups == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedGroups[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Todo) appendNamedGroups(name string, edges ...*TodoGroup) {
+	if _m.Edges.namedGroups == nil {
+		_m.Edges.namedGroups = make(map[string][]*TodoGroup)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedGroups[name] = []*TodoGroup{}
+	} else {
+		_m.Edges.namedGroups[name] = append(_m.Edges.namedGroups[name], edges...)
+	}
+}
+
 // NamedTodoReminders returns the TodoReminders named value or an error if the edge was not
 // loaded in eager-loading with this name.
 func (_m *Todo) NamedTodoReminders(name string) ([]*TodoReminder, error) {
@@ -238,6 +296,30 @@ func (_m *Todo) appendNamedTodoReminders(name string, edges ...*TodoReminder) {
 		_m.Edges.namedTodoReminders[name] = []*TodoReminder{}
 	} else {
 		_m.Edges.namedTodoReminders[name] = append(_m.Edges.namedTodoReminders[name], edges...)
+	}
+}
+
+// NamedGroupedTodos returns the GroupedTodos named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Todo) NamedGroupedTodos(name string) ([]*TodoToTodoGroupAssociation, error) {
+	if _m.Edges.namedGroupedTodos == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedGroupedTodos[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Todo) appendNamedGroupedTodos(name string, edges ...*TodoToTodoGroupAssociation) {
+	if _m.Edges.namedGroupedTodos == nil {
+		_m.Edges.namedGroupedTodos = make(map[string][]*TodoToTodoGroupAssociation)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedGroupedTodos[name] = []*TodoToTodoGroupAssociation{}
+	} else {
+		_m.Edges.namedGroupedTodos[name] = append(_m.Edges.namedGroupedTodos[name], edges...)
 	}
 }
 

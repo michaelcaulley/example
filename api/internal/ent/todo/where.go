@@ -265,6 +265,35 @@ func HasRemindersWith(preds ...predicate.Reminder) predicate.Todo {
 	})
 }
 
+// HasGroups applies the HasEdge predicate on the "groups" edge.
+func HasGroups() predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, GroupsTable, GroupsPrimaryKey...),
+		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoGroup
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroupsWith applies the HasEdge predicate on the "groups" edge with a given conditions (other predicates).
+func HasGroupsWith(preds ...predicate.TodoGroup) predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := newGroupsStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoGroup
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasTodoReminders applies the HasEdge predicate on the "todo_reminders" edge.
 func HasTodoReminders() predicate.Todo {
 	return predicate.Todo(func(s *sql.Selector) {
@@ -286,6 +315,35 @@ func HasTodoRemindersWith(preds ...predicate.TodoReminder) predicate.Todo {
 		schemaConfig := internal.SchemaConfigFromContext(s.Context())
 		step.To.Schema = schemaConfig.TodoReminder
 		step.Edge.Schema = schemaConfig.TodoReminder
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGroupedTodos applies the HasEdge predicate on the "grouped_todos" edge.
+func HasGroupedTodos() predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, GroupedTodosTable, GroupedTodosColumn),
+		)
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoToTodoGroupAssociation
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroupedTodosWith applies the HasEdge predicate on the "grouped_todos" edge with a given conditions (other predicates).
+func HasGroupedTodosWith(preds ...predicate.TodoToTodoGroupAssociation) predicate.Todo {
+	return predicate.Todo(func(s *sql.Selector) {
+		step := newGroupedTodosStep()
+		schemaConfig := internal.SchemaConfigFromContext(s.Context())
+		step.To.Schema = schemaConfig.TodoToTodoGroupAssociation
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

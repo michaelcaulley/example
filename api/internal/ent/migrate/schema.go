@@ -87,6 +87,19 @@ var (
 			},
 		},
 	}
+	// TodoGroupsColumns holds the columns for the "todo_groups" table.
+	TodoGroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "name", Type: field.TypeString, Size: 255},
+	}
+	// TodoGroupsTable holds the schema information for the "todo_groups" table.
+	TodoGroupsTable = &schema.Table{
+		Name:       "todo_groups",
+		Columns:    TodoGroupsColumns,
+		PrimaryKey: []*schema.Column{TodoGroupsColumns[0]},
+	}
 	// TodoRemindersColumns holds the columns for the "todo_reminders" table.
 	TodoRemindersColumns = []*schema.Column{
 		{Name: "todo_id", Type: field.TypeInt},
@@ -110,6 +123,57 @@ var (
 				Columns:    []*schema.Column{TodoRemindersColumns[1]},
 				RefColumns: []*schema.Column{RemindersColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// TodoToTodoGroupAssociationsColumns holds the columns for the "todo_to_todo_group_associations" table.
+	TodoToTodoGroupAssociationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "assignee_id", Type: field.TypeInt},
+		{Name: "todo_id", Type: field.TypeInt},
+		{Name: "todo_group_really_really_long_identifier", Type: field.TypeInt},
+	}
+	// TodoToTodoGroupAssociationsTable holds the schema information for the "todo_to_todo_group_associations" table.
+	TodoToTodoGroupAssociationsTable = &schema.Table{
+		Name:       "todo_to_todo_group_associations",
+		Columns:    TodoToTodoGroupAssociationsColumns,
+		PrimaryKey: []*schema.Column{TodoToTodoGroupAssociationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "todo_to_todo_group_associations_todos_todo",
+				Columns:    []*schema.Column{TodoToTodoGroupAssociationsColumns[4]},
+				RefColumns: []*schema.Column{TodosColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "todo_to_todo_group_associations_todo_groups_todo_group",
+				Columns:    []*schema.Column{TodoToTodoGroupAssociationsColumns[5]},
+				RefColumns: []*schema.Column{TodoGroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "todototodogroupassociation_todo_id",
+				Unique:  false,
+				Columns: []*schema.Column{TodoToTodoGroupAssociationsColumns[4]},
+			},
+			{
+				Name:    "todototodogroupassociation_todo_group_really_really_long_identifier",
+				Unique:  false,
+				Columns: []*schema.Column{TodoToTodoGroupAssociationsColumns[5]},
+			},
+			{
+				Name:    "todototodogroupassociation_assignee_id",
+				Unique:  false,
+				Columns: []*schema.Column{TodoToTodoGroupAssociationsColumns[3]},
+			},
+			{
+				Name:    "todototodogroupassociation_todo_group_really_really_long_identifier_todo_id",
+				Unique:  true,
+				Columns: []*schema.Column{TodoToTodoGroupAssociationsColumns[5], TodoToTodoGroupAssociationsColumns[4]},
 			},
 		},
 	}
@@ -140,7 +204,9 @@ var (
 		ModeratorsTable,
 		RemindersTable,
 		TodosTable,
+		TodoGroupsTable,
 		TodoRemindersTable,
+		TodoToTodoGroupAssociationsTable,
 		UsersTable,
 	}
 )
@@ -161,11 +227,21 @@ func init() {
 		Table:          "todos",
 		IncrementStart: func(i int) *int { return &i }(4294967296),
 	}
+	TodoGroupsTable.Annotation = &entsql.Annotation{
+		Table:          "todo_groups",
+		IncrementStart: func(i int) *int { return &i }(21474836480),
+	}
 	TodoRemindersTable.ForeignKeys[0].RefTable = TodosTable
 	TodoRemindersTable.ForeignKeys[1].RefTable = RemindersTable
 	TodoRemindersTable.Annotation = &entsql.Annotation{
 		Table:          "todo_reminders",
 		IncrementStart: func(i int) *int { return &i }(12884901888),
+	}
+	TodoToTodoGroupAssociationsTable.ForeignKeys[0].RefTable = TodosTable
+	TodoToTodoGroupAssociationsTable.ForeignKeys[1].RefTable = TodoGroupsTable
+	TodoToTodoGroupAssociationsTable.Annotation = &entsql.Annotation{
+		Table:          "todo_to_todo_group_associations",
+		IncrementStart: func(i int) *int { return &i }(25769803776),
 	}
 	UsersTable.Annotation = &entsql.Annotation{
 		Table:          "users",

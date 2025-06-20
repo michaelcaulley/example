@@ -15,8 +15,14 @@ type Reminder func(*sql.Selector)
 // Todo is the predicate function for todo builders.
 type Todo func(*sql.Selector)
 
+// TodoGroup is the predicate function for todogroup builders.
+type TodoGroup func(*sql.Selector)
+
 // TodoReminder is the predicate function for todoreminder builders.
 type TodoReminder func(*sql.Selector)
+
+// TodoToTodoGroupAssociation is the predicate function for todototodogroupassociation builders.
+type TodoToTodoGroupAssociation func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

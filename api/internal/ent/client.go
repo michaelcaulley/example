@@ -14,7 +14,9 @@ import (
 	"example/internal/ent/moderator"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
 	"example/internal/ent/todoreminder"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 
 	"entgo.io/ent"
@@ -37,8 +39,12 @@ type Client struct {
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
 	Todo *TodoClient
+	// TodoGroup is the client for interacting with the TodoGroup builders.
+	TodoGroup *TodoGroupClient
 	// TodoReminder is the client for interacting with the TodoReminder builders.
 	TodoReminder *TodoReminderClient
+	// TodoToTodoGroupAssociation is the client for interacting with the TodoToTodoGroupAssociation builders.
+	TodoToTodoGroupAssociation *TodoToTodoGroupAssociationClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -55,7 +61,9 @@ func (c *Client) init() {
 	c.Moderator = NewModeratorClient(c.config)
 	c.Reminder = NewReminderClient(c.config)
 	c.Todo = NewTodoClient(c.config)
+	c.TodoGroup = NewTodoGroupClient(c.config)
 	c.TodoReminder = NewTodoReminderClient(c.config)
+	c.TodoToTodoGroupAssociation = NewTodoToTodoGroupAssociationClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -150,13 +158,15 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Moderator:    NewModeratorClient(cfg),
-		Reminder:     NewReminderClient(cfg),
-		Todo:         NewTodoClient(cfg),
-		TodoReminder: NewTodoReminderClient(cfg),
-		User:         NewUserClient(cfg),
+		ctx:                        ctx,
+		config:                     cfg,
+		Moderator:                  NewModeratorClient(cfg),
+		Reminder:                   NewReminderClient(cfg),
+		Todo:                       NewTodoClient(cfg),
+		TodoGroup:                  NewTodoGroupClient(cfg),
+		TodoReminder:               NewTodoReminderClient(cfg),
+		TodoToTodoGroupAssociation: NewTodoToTodoGroupAssociationClient(cfg),
+		User:                       NewUserClient(cfg),
 	}, nil
 }
 
@@ -174,13 +184,15 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Moderator:    NewModeratorClient(cfg),
-		Reminder:     NewReminderClient(cfg),
-		Todo:         NewTodoClient(cfg),
-		TodoReminder: NewTodoReminderClient(cfg),
-		User:         NewUserClient(cfg),
+		ctx:                        ctx,
+		config:                     cfg,
+		Moderator:                  NewModeratorClient(cfg),
+		Reminder:                   NewReminderClient(cfg),
+		Todo:                       NewTodoClient(cfg),
+		TodoGroup:                  NewTodoGroupClient(cfg),
+		TodoReminder:               NewTodoReminderClient(cfg),
+		TodoToTodoGroupAssociation: NewTodoToTodoGroupAssociationClient(cfg),
+		User:                       NewUserClient(cfg),
 	}, nil
 }
 
@@ -209,21 +221,23 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Moderator.Use(hooks...)
-	c.Reminder.Use(hooks...)
-	c.Todo.Use(hooks...)
-	c.TodoReminder.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Moderator, c.Reminder, c.Todo, c.TodoGroup, c.TodoReminder,
+		c.TodoToTodoGroupAssociation, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Moderator.Intercept(interceptors...)
-	c.Reminder.Intercept(interceptors...)
-	c.Todo.Intercept(interceptors...)
-	c.TodoReminder.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Moderator, c.Reminder, c.Todo, c.TodoGroup, c.TodoReminder,
+		c.TodoToTodoGroupAssociation, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -235,8 +249,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Reminder.mutate(ctx, m)
 	case *TodoMutation:
 		return c.Todo.mutate(ctx, m)
+	case *TodoGroupMutation:
+		return c.TodoGroup.mutate(ctx, m)
 	case *TodoReminderMutation:
 		return c.TodoReminder.mutate(ctx, m)
+	case *TodoToTodoGroupAssociationMutation:
+		return c.TodoToTodoGroupAssociation.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -678,6 +696,25 @@ func (c *TodoClient) QueryReminders(_m *Todo) *ReminderQuery {
 	return query
 }
 
+// QueryGroups queries the groups edge of a Todo.
+func (c *TodoClient) QueryGroups(_m *Todo) *TodoGroupQuery {
+	query := (&TodoGroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.To(todogroup.Table, todogroup.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, todo.GroupsTable, todo.GroupsPrimaryKey...),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoGroup
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryTodoReminders queries the todo_reminders edge of a Todo.
 func (c *TodoClient) QueryTodoReminders(_m *Todo) *TodoReminderQuery {
 	query := (&TodoReminderClient{config: c.config}).Query()
@@ -691,6 +728,25 @@ func (c *TodoClient) QueryTodoReminders(_m *Todo) *TodoReminderQuery {
 		schemaConfig := _m.schemaConfig
 		step.To.Schema = schemaConfig.TodoReminder
 		step.Edge.Schema = schemaConfig.TodoReminder
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroupedTodos queries the grouped_todos edge of a Todo.
+func (c *TodoClient) QueryGroupedTodos(_m *Todo) *TodoToTodoGroupAssociationQuery {
+	query := (&TodoToTodoGroupAssociationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.To(todototodogroupassociation.Table, todototodogroupassociation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, todo.GroupedTodosTable, todo.GroupedTodosColumn),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoToTodoGroupAssociation
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
@@ -719,6 +775,178 @@ func (c *TodoClient) mutate(ctx context.Context, m *TodoMutation) (Value, error)
 		return (&TodoDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Todo mutation op: %q", m.Op())
+	}
+}
+
+// TodoGroupClient is a client for the TodoGroup schema.
+type TodoGroupClient struct {
+	config
+}
+
+// NewTodoGroupClient returns a client for the TodoGroup from the given config.
+func NewTodoGroupClient(c config) *TodoGroupClient {
+	return &TodoGroupClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `todogroup.Hooks(f(g(h())))`.
+func (c *TodoGroupClient) Use(hooks ...Hook) {
+	c.hooks.TodoGroup = append(c.hooks.TodoGroup, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `todogroup.Intercept(f(g(h())))`.
+func (c *TodoGroupClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TodoGroup = append(c.inters.TodoGroup, interceptors...)
+}
+
+// Create returns a builder for creating a TodoGroup entity.
+func (c *TodoGroupClient) Create() *TodoGroupCreate {
+	mutation := newTodoGroupMutation(c.config, OpCreate)
+	return &TodoGroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TodoGroup entities.
+func (c *TodoGroupClient) CreateBulk(builders ...*TodoGroupCreate) *TodoGroupCreateBulk {
+	return &TodoGroupCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TodoGroupClient) MapCreateBulk(slice any, setFunc func(*TodoGroupCreate, int)) *TodoGroupCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TodoGroupCreateBulk{err: fmt.Errorf("calling to TodoGroupClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TodoGroupCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TodoGroupCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TodoGroup.
+func (c *TodoGroupClient) Update() *TodoGroupUpdate {
+	mutation := newTodoGroupMutation(c.config, OpUpdate)
+	return &TodoGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TodoGroupClient) UpdateOne(_m *TodoGroup) *TodoGroupUpdateOne {
+	mutation := newTodoGroupMutation(c.config, OpUpdateOne, withTodoGroup(_m))
+	return &TodoGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TodoGroupClient) UpdateOneID(id int) *TodoGroupUpdateOne {
+	mutation := newTodoGroupMutation(c.config, OpUpdateOne, withTodoGroupID(id))
+	return &TodoGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TodoGroup.
+func (c *TodoGroupClient) Delete() *TodoGroupDelete {
+	mutation := newTodoGroupMutation(c.config, OpDelete)
+	return &TodoGroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TodoGroupClient) DeleteOne(_m *TodoGroup) *TodoGroupDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TodoGroupClient) DeleteOneID(id int) *TodoGroupDeleteOne {
+	builder := c.Delete().Where(todogroup.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TodoGroupDeleteOne{builder}
+}
+
+// Query returns a query builder for TodoGroup.
+func (c *TodoGroupClient) Query() *TodoGroupQuery {
+	return &TodoGroupQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTodoGroup},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TodoGroup entity by its id.
+func (c *TodoGroupClient) Get(ctx context.Context, id int) (*TodoGroup, error) {
+	return c.Query().Where(todogroup.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TodoGroupClient) GetX(ctx context.Context, id int) *TodoGroup {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTodos queries the todos edge of a TodoGroup.
+func (c *TodoGroupClient) QueryTodos(_m *TodoGroup) *TodoQuery {
+	query := (&TodoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todogroup.Table, todogroup.FieldID, id),
+			sqlgraph.To(todo.Table, todo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, todogroup.TodosTable, todogroup.TodosPrimaryKey...),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroupedTodos queries the grouped_todos edge of a TodoGroup.
+func (c *TodoGroupClient) QueryGroupedTodos(_m *TodoGroup) *TodoToTodoGroupAssociationQuery {
+	query := (&TodoToTodoGroupAssociationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todogroup.Table, todogroup.FieldID, id),
+			sqlgraph.To(todototodogroupassociation.Table, todototodogroupassociation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, todogroup.GroupedTodosTable, todogroup.GroupedTodosColumn),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoToTodoGroupAssociation
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TodoGroupClient) Hooks() []Hook {
+	hooks := c.hooks.TodoGroup
+	return append(hooks[:len(hooks):len(hooks)], todogroup.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *TodoGroupClient) Interceptors() []Interceptor {
+	return c.inters.TodoGroup
+}
+
+func (c *TodoGroupClient) mutate(ctx context.Context, m *TodoGroupMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TodoGroupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TodoGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TodoGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TodoGroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TodoGroup mutation op: %q", m.Op())
 	}
 }
 
@@ -835,6 +1063,178 @@ func (c *TodoReminderClient) mutate(ctx context.Context, m *TodoReminderMutation
 		return (&TodoReminderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown TodoReminder mutation op: %q", m.Op())
+	}
+}
+
+// TodoToTodoGroupAssociationClient is a client for the TodoToTodoGroupAssociation schema.
+type TodoToTodoGroupAssociationClient struct {
+	config
+}
+
+// NewTodoToTodoGroupAssociationClient returns a client for the TodoToTodoGroupAssociation from the given config.
+func NewTodoToTodoGroupAssociationClient(c config) *TodoToTodoGroupAssociationClient {
+	return &TodoToTodoGroupAssociationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `todototodogroupassociation.Hooks(f(g(h())))`.
+func (c *TodoToTodoGroupAssociationClient) Use(hooks ...Hook) {
+	c.hooks.TodoToTodoGroupAssociation = append(c.hooks.TodoToTodoGroupAssociation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `todototodogroupassociation.Intercept(f(g(h())))`.
+func (c *TodoToTodoGroupAssociationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TodoToTodoGroupAssociation = append(c.inters.TodoToTodoGroupAssociation, interceptors...)
+}
+
+// Create returns a builder for creating a TodoToTodoGroupAssociation entity.
+func (c *TodoToTodoGroupAssociationClient) Create() *TodoToTodoGroupAssociationCreate {
+	mutation := newTodoToTodoGroupAssociationMutation(c.config, OpCreate)
+	return &TodoToTodoGroupAssociationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TodoToTodoGroupAssociation entities.
+func (c *TodoToTodoGroupAssociationClient) CreateBulk(builders ...*TodoToTodoGroupAssociationCreate) *TodoToTodoGroupAssociationCreateBulk {
+	return &TodoToTodoGroupAssociationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TodoToTodoGroupAssociationClient) MapCreateBulk(slice any, setFunc func(*TodoToTodoGroupAssociationCreate, int)) *TodoToTodoGroupAssociationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TodoToTodoGroupAssociationCreateBulk{err: fmt.Errorf("calling to TodoToTodoGroupAssociationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TodoToTodoGroupAssociationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TodoToTodoGroupAssociationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TodoToTodoGroupAssociation.
+func (c *TodoToTodoGroupAssociationClient) Update() *TodoToTodoGroupAssociationUpdate {
+	mutation := newTodoToTodoGroupAssociationMutation(c.config, OpUpdate)
+	return &TodoToTodoGroupAssociationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TodoToTodoGroupAssociationClient) UpdateOne(_m *TodoToTodoGroupAssociation) *TodoToTodoGroupAssociationUpdateOne {
+	mutation := newTodoToTodoGroupAssociationMutation(c.config, OpUpdateOne, withTodoToTodoGroupAssociation(_m))
+	return &TodoToTodoGroupAssociationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TodoToTodoGroupAssociationClient) UpdateOneID(id int) *TodoToTodoGroupAssociationUpdateOne {
+	mutation := newTodoToTodoGroupAssociationMutation(c.config, OpUpdateOne, withTodoToTodoGroupAssociationID(id))
+	return &TodoToTodoGroupAssociationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TodoToTodoGroupAssociation.
+func (c *TodoToTodoGroupAssociationClient) Delete() *TodoToTodoGroupAssociationDelete {
+	mutation := newTodoToTodoGroupAssociationMutation(c.config, OpDelete)
+	return &TodoToTodoGroupAssociationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TodoToTodoGroupAssociationClient) DeleteOne(_m *TodoToTodoGroupAssociation) *TodoToTodoGroupAssociationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TodoToTodoGroupAssociationClient) DeleteOneID(id int) *TodoToTodoGroupAssociationDeleteOne {
+	builder := c.Delete().Where(todototodogroupassociation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TodoToTodoGroupAssociationDeleteOne{builder}
+}
+
+// Query returns a query builder for TodoToTodoGroupAssociation.
+func (c *TodoToTodoGroupAssociationClient) Query() *TodoToTodoGroupAssociationQuery {
+	return &TodoToTodoGroupAssociationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTodoToTodoGroupAssociation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TodoToTodoGroupAssociation entity by its id.
+func (c *TodoToTodoGroupAssociationClient) Get(ctx context.Context, id int) (*TodoToTodoGroupAssociation, error) {
+	return c.Query().Where(todototodogroupassociation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TodoToTodoGroupAssociationClient) GetX(ctx context.Context, id int) *TodoToTodoGroupAssociation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTodo queries the todo edge of a TodoToTodoGroupAssociation.
+func (c *TodoToTodoGroupAssociationClient) QueryTodo(_m *TodoToTodoGroupAssociation) *TodoQuery {
+	query := (&TodoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todototodogroupassociation.Table, todototodogroupassociation.FieldID, id),
+			sqlgraph.To(todo.Table, todo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, todototodogroupassociation.TodoTable, todototodogroupassociation.TodoColumn),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.Todo
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTodoGroup queries the todo_group edge of a TodoToTodoGroupAssociation.
+func (c *TodoToTodoGroupAssociationClient) QueryTodoGroup(_m *TodoToTodoGroupAssociation) *TodoGroupQuery {
+	query := (&TodoGroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todototodogroupassociation.Table, todototodogroupassociation.FieldID, id),
+			sqlgraph.To(todogroup.Table, todogroup.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, todototodogroupassociation.TodoGroupTable, todototodogroupassociation.TodoGroupColumn),
+		)
+		schemaConfig := _m.schemaConfig
+		step.To.Schema = schemaConfig.TodoGroup
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TodoToTodoGroupAssociationClient) Hooks() []Hook {
+	hooks := c.hooks.TodoToTodoGroupAssociation
+	return append(hooks[:len(hooks):len(hooks)], todototodogroupassociation.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *TodoToTodoGroupAssociationClient) Interceptors() []Interceptor {
+	return c.inters.TodoToTodoGroupAssociation
+}
+
+func (c *TodoToTodoGroupAssociationClient) mutate(ctx context.Context, m *TodoToTodoGroupAssociationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TodoToTodoGroupAssociationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TodoToTodoGroupAssociationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TodoToTodoGroupAssociationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TodoToTodoGroupAssociationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TodoToTodoGroupAssociation mutation op: %q", m.Op())
 	}
 }
 
@@ -1050,21 +1450,25 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Moderator, Reminder, Todo, TodoReminder, User []ent.Hook
+		Moderator, Reminder, Todo, TodoGroup, TodoReminder, TodoToTodoGroupAssociation,
+		User []ent.Hook
 	}
 	inters struct {
-		Moderator, Reminder, Todo, TodoReminder, User []ent.Interceptor
+		Moderator, Reminder, Todo, TodoGroup, TodoReminder, TodoToTodoGroupAssociation,
+		User []ent.Interceptor
 	}
 )
 
 var (
 	// DefaultSchemaConfig represents the default schema names for all tables as defined in ent/schema.
 	DefaultSchemaConfig = SchemaConfig{
-		Moderator:    tableSchemas[0],
-		Reminder:     tableSchemas[1],
-		Todo:         tableSchemas[1],
-		TodoReminder: tableSchemas[1],
-		User:         tableSchemas[0],
+		Moderator:                  tableSchemas[0],
+		Reminder:                   tableSchemas[1],
+		Todo:                       tableSchemas[1],
+		TodoGroup:                  tableSchemas[1],
+		TodoReminder:               tableSchemas[1],
+		TodoToTodoGroupAssociation: tableSchemas[1],
+		User:                       tableSchemas[0],
 	}
 	tableSchemas = [...]string{"app", "todo"}
 )

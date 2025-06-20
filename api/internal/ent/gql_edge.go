@@ -40,6 +40,105 @@ func (_m *Todo) Reminders(ctx context.Context) (result []*Reminder, err error) {
 	return result, err
 }
 
+func (_m *Todo) Groups(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *TodoGroupOrder, where *TodoGroupWhereInput,
+) (*TodoGroupConnection, error) {
+	opts := []TodoGroupPaginateOption{
+		WithTodoGroupOrder(orderBy),
+		WithTodoGroupFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
+	if nodes, err := _m.NamedGroups(alias); err == nil || hasTotalCount {
+		pager, err := newTodoGroupPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &TodoGroupConnection{Edges: []*TodoGroupEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryGroups().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Todo) GroupedTodos(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *TodoToTodoGroupAssociationOrder, where *TodoToTodoGroupAssociationWhereInput,
+) (*TodoToTodoGroupAssociationConnection, error) {
+	opts := []TodoToTodoGroupAssociationPaginateOption{
+		WithTodoToTodoGroupAssociationOrder(orderBy),
+		WithTodoToTodoGroupAssociationFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	if nodes, err := _m.NamedGroupedTodos(alias); err == nil || hasTotalCount {
+		pager, err := newTodoToTodoGroupAssociationPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &TodoToTodoGroupAssociationConnection{Edges: []*TodoToTodoGroupAssociationEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryGroupedTodos().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *TodoGroup) Todos(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *TodoWhereInput,
+) (*TodoConnection, error) {
+	opts := []TodoPaginateOption{
+		WithTodoFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[0][alias]
+	if nodes, err := _m.NamedTodos(alias); err == nil || hasTotalCount {
+		pager, err := newTodoPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &TodoConnection{Edges: []*TodoEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryTodos().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *TodoGroup) GroupedTodos(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *TodoToTodoGroupAssociationOrder, where *TodoToTodoGroupAssociationWhereInput,
+) (*TodoToTodoGroupAssociationConnection, error) {
+	opts := []TodoToTodoGroupAssociationPaginateOption{
+		WithTodoToTodoGroupAssociationOrder(orderBy),
+		WithTodoToTodoGroupAssociationFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
+	if nodes, err := _m.NamedGroupedTodos(alias); err == nil || hasTotalCount {
+		pager, err := newTodoToTodoGroupAssociationPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &TodoToTodoGroupAssociationConnection{Edges: []*TodoToTodoGroupAssociationEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryGroupedTodos().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *TodoToTodoGroupAssociation) Todo(ctx context.Context) (*Todo, error) {
+	result, err := _m.Edges.TodoOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTodo().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *TodoToTodoGroupAssociation) TodoGroup(ctx context.Context) (*TodoGroup, error) {
+	result, err := _m.Edges.TodoGroupOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTodoGroup().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *User) Todos(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *TodoWhereInput,
 ) (*TodoConnection, error) {

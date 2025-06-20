@@ -183,6 +183,30 @@ func (f TodoMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoMutation", m)
 }
 
+// The TodoGroupQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type TodoGroupQueryRuleFunc func(context.Context, *ent.TodoGroupQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f TodoGroupQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TodoGroupQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TodoGroupQuery", q)
+}
+
+// The TodoGroupMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type TodoGroupMutationRuleFunc func(context.Context, *ent.TodoGroupMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f TodoGroupMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.TodoGroupMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoGroupMutation", m)
+}
+
 // The TodoReminderQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type TodoReminderQueryRuleFunc func(context.Context, *ent.TodoReminderQuery) error
@@ -205,6 +229,30 @@ func (f TodoReminderMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mu
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoReminderMutation", m)
+}
+
+// The TodoToTodoGroupAssociationQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type TodoToTodoGroupAssociationQueryRuleFunc func(context.Context, *ent.TodoToTodoGroupAssociationQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f TodoToTodoGroupAssociationQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TodoToTodoGroupAssociationQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TodoToTodoGroupAssociationQuery", q)
+}
+
+// The TodoToTodoGroupAssociationMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type TodoToTodoGroupAssociationMutationRuleFunc func(context.Context, *ent.TodoToTodoGroupAssociationMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f TodoToTodoGroupAssociationMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.TodoToTodoGroupAssociationMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TodoToTodoGroupAssociationMutation", m)
 }
 
 // The UserQueryRuleFunc type is an adapter to allow the use of ordinary
@@ -272,7 +320,11 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.TodoQuery:
 		return q.Filter(), nil
+	case *ent.TodoGroupQuery:
+		return q.Filter(), nil
 	case *ent.TodoReminderQuery:
+		return q.Filter(), nil
+	case *ent.TodoToTodoGroupAssociationQuery:
 		return q.Filter(), nil
 	case *ent.UserQuery:
 		return q.Filter(), nil
@@ -289,7 +341,11 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 		return m.Filter(), nil
 	case *ent.TodoMutation:
 		return m.Filter(), nil
+	case *ent.TodoGroupMutation:
+		return m.Filter(), nil
 	case *ent.TodoReminderMutation:
+		return m.Filter(), nil
+	case *ent.TodoToTodoGroupAssociationMutation:
 		return m.Filter(), nil
 	case *ent.UserMutation:
 		return m.Filter(), nil

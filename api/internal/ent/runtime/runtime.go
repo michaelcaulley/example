@@ -6,6 +6,8 @@ import (
 	"example/internal/ent/reminder"
 	"example/internal/ent/schema"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -35,6 +37,32 @@ func init() {
 			return nil
 		}
 	}()
+	todogroupMixin := schema.TodoGroup{}.Mixin()
+	todogroupMixinHooks0 := todogroupMixin[0].Hooks()
+	todogroup.Hooks[0] = todogroupMixinHooks0[0]
+	todogroupFields := schema.TodoGroup{}.Fields()
+	_ = todogroupFields
+	// todogroupDescName is the schema descriptor for name field.
+	todogroupDescName := todogroupFields[0].Descriptor()
+	// todogroup.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	todogroup.NameValidator = func() func(string) error {
+		validators := todogroupDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	todototodogroupassociationMixin := schema.TodoToTodoGroupAssociation{}.Mixin()
+	todototodogroupassociationMixinHooks0 := todototodogroupassociationMixin[0].Hooks()
+	todototodogroupassociation.Hooks[0] = todototodogroupassociationMixinHooks0[0]
 }
 
 const (

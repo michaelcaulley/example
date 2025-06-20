@@ -7,7 +7,9 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
 	"example/internal/ent/todoreminder"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 
 	"entgo.io/ent/dialect/sql"
@@ -18,7 +20,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 5)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 7)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   moderator.Table,
@@ -73,6 +75,22 @@ var schemaGraph = func() *sqlgraph.Schema {
 	}
 	graph.Nodes[3] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
+			Table:   todogroup.Table,
+			Columns: todogroup.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: todogroup.FieldID,
+			},
+		},
+		Type: "TodoGroup",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			todogroup.FieldCreatedAt: {Type: field.TypeTime, Column: todogroup.FieldCreatedAt},
+			todogroup.FieldUpdatedAt: {Type: field.TypeTime, Column: todogroup.FieldUpdatedAt},
+			todogroup.FieldName:      {Type: field.TypeString, Column: todogroup.FieldName},
+		},
+	}
+	graph.Nodes[4] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
 			Table:   todoreminder.Table,
 			Columns: todoreminder.Columns,
 			CompositeID: []*sqlgraph.FieldSpec{
@@ -92,7 +110,25 @@ var schemaGraph = func() *sqlgraph.Schema {
 			todoreminder.FieldReminderID: {Type: field.TypeInt, Column: todoreminder.FieldReminderID},
 		},
 	}
-	graph.Nodes[4] = &sqlgraph.Node{
+	graph.Nodes[5] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   todototodogroupassociation.Table,
+			Columns: todototodogroupassociation.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: todototodogroupassociation.FieldID,
+			},
+		},
+		Type: "TodoToTodoGroupAssociation",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			todototodogroupassociation.FieldCreatedAt:                           {Type: field.TypeTime, Column: todototodogroupassociation.FieldCreatedAt},
+			todototodogroupassociation.FieldUpdatedAt:                           {Type: field.TypeTime, Column: todototodogroupassociation.FieldUpdatedAt},
+			todototodogroupassociation.FieldTodoID:                              {Type: field.TypeInt, Column: todototodogroupassociation.FieldTodoID},
+			todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier: {Type: field.TypeInt, Column: todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier},
+			todototodogroupassociation.FieldAssigneeID:                          {Type: field.TypeInt, Column: todototodogroupassociation.FieldAssigneeID},
+		},
+	}
+	graph.Nodes[6] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
@@ -179,6 +215,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Reminder",
 	)
 	graph.MustAddE(
+		"groups",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+		},
+		"Todo",
+		"TodoGroup",
+	)
+	graph.MustAddE(
 		"todo_reminders",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -189,6 +237,42 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"Todo",
 		"TodoReminder",
+	)
+	graph.MustAddE(
+		"grouped_todos",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+		},
+		"Todo",
+		"TodoToTodoGroupAssociation",
+	)
+	graph.MustAddE(
+		"todos",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   todogroup.TodosTable,
+			Columns: todogroup.TodosPrimaryKey,
+			Bidi:    false,
+		},
+		"TodoGroup",
+		"Todo",
+	)
+	graph.MustAddE(
+		"grouped_todos",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todogroup.GroupedTodosTable,
+			Columns: []string{todogroup.GroupedTodosColumn},
+			Bidi:    false,
+		},
+		"TodoGroup",
+		"TodoToTodoGroupAssociation",
 	)
 	graph.MustAddE(
 		"todo",
@@ -213,6 +297,30 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"TodoReminder",
 		"Reminder",
+	)
+	graph.MustAddE(
+		"todo",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   todototodogroupassociation.TodoTable,
+			Columns: []string{todototodogroupassociation.TodoColumn},
+			Bidi:    false,
+		},
+		"TodoToTodoGroupAssociation",
+		"Todo",
+	)
+	graph.MustAddE(
+		"todo_group",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   todototodogroupassociation.TodoGroupTable,
+			Columns: []string{todototodogroupassociation.TodoGroupColumn},
+			Bidi:    false,
+		},
+		"TodoToTodoGroupAssociation",
+		"TodoGroup",
 	)
 	graph.MustAddE(
 		"todos",
@@ -505,6 +613,20 @@ func (f *TodoFilter) WhereHasRemindersWith(preds ...predicate.Reminder) {
 	})))
 }
 
+// WhereHasGroups applies a predicate to check if query has an edge groups.
+func (f *TodoFilter) WhereHasGroups() {
+	f.Where(entql.HasEdge("groups"))
+}
+
+// WhereHasGroupsWith applies a predicate to check if query has an edge groups with a given conditions (other predicates).
+func (f *TodoFilter) WhereHasGroupsWith(preds ...predicate.TodoGroup) {
+	f.Where(entql.HasEdgeWith("groups", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // WhereHasTodoReminders applies a predicate to check if query has an edge todo_reminders.
 func (f *TodoFilter) WhereHasTodoReminders() {
 	f.Where(entql.HasEdge("todo_reminders"))
@@ -513,6 +635,103 @@ func (f *TodoFilter) WhereHasTodoReminders() {
 // WhereHasTodoRemindersWith applies a predicate to check if query has an edge todo_reminders with a given conditions (other predicates).
 func (f *TodoFilter) WhereHasTodoRemindersWith(preds ...predicate.TodoReminder) {
 	f.Where(entql.HasEdgeWith("todo_reminders", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasGroupedTodos applies a predicate to check if query has an edge grouped_todos.
+func (f *TodoFilter) WhereHasGroupedTodos() {
+	f.Where(entql.HasEdge("grouped_todos"))
+}
+
+// WhereHasGroupedTodosWith applies a predicate to check if query has an edge grouped_todos with a given conditions (other predicates).
+func (f *TodoFilter) WhereHasGroupedTodosWith(preds ...predicate.TodoToTodoGroupAssociation) {
+	f.Where(entql.HasEdgeWith("grouped_todos", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *TodoGroupQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the TodoGroupQuery builder.
+func (_q *TodoGroupQuery) Filter() *TodoGroupFilter {
+	return &TodoGroupFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *TodoGroupMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the TodoGroupMutation builder.
+func (m *TodoGroupMutation) Filter() *TodoGroupFilter {
+	return &TodoGroupFilter{config: m.config, predicateAdder: m}
+}
+
+// TodoGroupFilter provides a generic filtering capability at runtime for TodoGroupQuery.
+type TodoGroupFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *TodoGroupFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[3].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *TodoGroupFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(todogroup.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *TodoGroupFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(todogroup.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *TodoGroupFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(todogroup.FieldUpdatedAt))
+}
+
+// WhereName applies the entql string predicate on the name field.
+func (f *TodoGroupFilter) WhereName(p entql.StringP) {
+	f.Where(p.Field(todogroup.FieldName))
+}
+
+// WhereHasTodos applies a predicate to check if query has an edge todos.
+func (f *TodoGroupFilter) WhereHasTodos() {
+	f.Where(entql.HasEdge("todos"))
+}
+
+// WhereHasTodosWith applies a predicate to check if query has an edge todos with a given conditions (other predicates).
+func (f *TodoGroupFilter) WhereHasTodosWith(preds ...predicate.Todo) {
+	f.Where(entql.HasEdgeWith("todos", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasGroupedTodos applies a predicate to check if query has an edge grouped_todos.
+func (f *TodoGroupFilter) WhereHasGroupedTodos() {
+	f.Where(entql.HasEdge("grouped_todos"))
+}
+
+// WhereHasGroupedTodosWith applies a predicate to check if query has an edge grouped_todos with a given conditions (other predicates).
+func (f *TodoGroupFilter) WhereHasGroupedTodosWith(preds ...predicate.TodoToTodoGroupAssociation) {
+	f.Where(entql.HasEdgeWith("grouped_todos", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -548,7 +767,7 @@ type TodoReminderFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *TodoReminderFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[3].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[4].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -593,6 +812,99 @@ func (f *TodoReminderFilter) WhereHasReminderWith(preds ...predicate.Reminder) {
 }
 
 // addPredicate implements the predicateAdder interface.
+func (_q *TodoToTodoGroupAssociationQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the TodoToTodoGroupAssociationQuery builder.
+func (_q *TodoToTodoGroupAssociationQuery) Filter() *TodoToTodoGroupAssociationFilter {
+	return &TodoToTodoGroupAssociationFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *TodoToTodoGroupAssociationMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the TodoToTodoGroupAssociationMutation builder.
+func (m *TodoToTodoGroupAssociationMutation) Filter() *TodoToTodoGroupAssociationFilter {
+	return &TodoToTodoGroupAssociationFilter{config: m.config, predicateAdder: m}
+}
+
+// TodoToTodoGroupAssociationFilter provides a generic filtering capability at runtime for TodoToTodoGroupAssociationQuery.
+type TodoToTodoGroupAssociationFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *TodoToTodoGroupAssociationFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[5].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *TodoToTodoGroupAssociationFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(todototodogroupassociation.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *TodoToTodoGroupAssociationFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(todototodogroupassociation.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *TodoToTodoGroupAssociationFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(todototodogroupassociation.FieldUpdatedAt))
+}
+
+// WhereTodoID applies the entql int predicate on the todo_id field.
+func (f *TodoToTodoGroupAssociationFilter) WhereTodoID(p entql.IntP) {
+	f.Where(p.Field(todototodogroupassociation.FieldTodoID))
+}
+
+// WhereTodoGroupReallyReallyLongIdentifier applies the entql int predicate on the todo_group_really_really_long_identifier field.
+func (f *TodoToTodoGroupAssociationFilter) WhereTodoGroupReallyReallyLongIdentifier(p entql.IntP) {
+	f.Where(p.Field(todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier))
+}
+
+// WhereAssigneeID applies the entql int predicate on the assignee_id field.
+func (f *TodoToTodoGroupAssociationFilter) WhereAssigneeID(p entql.IntP) {
+	f.Where(p.Field(todototodogroupassociation.FieldAssigneeID))
+}
+
+// WhereHasTodo applies a predicate to check if query has an edge todo.
+func (f *TodoToTodoGroupAssociationFilter) WhereHasTodo() {
+	f.Where(entql.HasEdge("todo"))
+}
+
+// WhereHasTodoWith applies a predicate to check if query has an edge todo with a given conditions (other predicates).
+func (f *TodoToTodoGroupAssociationFilter) WhereHasTodoWith(preds ...predicate.Todo) {
+	f.Where(entql.HasEdgeWith("todo", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasTodoGroup applies a predicate to check if query has an edge todo_group.
+func (f *TodoToTodoGroupAssociationFilter) WhereHasTodoGroup() {
+	f.Where(entql.HasEdge("todo_group"))
+}
+
+// WhereHasTodoGroupWith applies a predicate to check if query has an edge todo_group with a given conditions (other predicates).
+func (f *TodoToTodoGroupAssociationFilter) WhereHasTodoGroupWith(preds ...predicate.TodoGroup) {
+	f.Where(entql.HasEdgeWith("todo_group", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
 func (_q *UserQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
 }
@@ -621,7 +933,7 @@ type UserFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[4].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[6].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})

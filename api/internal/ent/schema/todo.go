@@ -53,6 +53,13 @@ func (Todo) Edges() []ent.Edge {
 		edge.To("reminders", Reminder.Type).
 			Through("todo_reminders", TodoReminder.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("groups", TodoGroup.Type).
+			Ref("todos").
+			Annotations(
+				entgql.RelayConnection(),
+				entsql.OnDelete(entsql.Cascade),
+			).
+			Through("grouped_todos", TodoToTodoGroupAssociation.Type),
 	}
 }
 

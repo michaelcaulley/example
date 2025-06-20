@@ -8,7 +8,9 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
 	"example/internal/ent/todoreminder"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 	"math"
@@ -30,11 +32,15 @@ type TodoQuery struct {
 	predicates             []predicate.Todo
 	withOwner              *UserQuery
 	withReminders          *ReminderQuery
+	withGroups             *TodoGroupQuery
 	withTodoReminders      *TodoReminderQuery
+	withGroupedTodos       *TodoToTodoGroupAssociationQuery
 	loadTotal              []func(context.Context, []*Todo) error
 	modifiers              []func(*sql.Selector)
 	withNamedReminders     map[string]*ReminderQuery
+	withNamedGroups        map[string]*TodoGroupQuery
 	withNamedTodoReminders map[string]*TodoReminderQuery
+	withNamedGroupedTodos  map[string]*TodoToTodoGroupAssociationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -121,6 +127,31 @@ func (_q *TodoQuery) QueryReminders() *ReminderQuery {
 	return query
 }
 
+// QueryGroups chains the current query on the "groups" edge.
+func (_q *TodoQuery) QueryGroups() *TodoGroupQuery {
+	query := (&TodoGroupClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, selector),
+			sqlgraph.To(todogroup.Table, todogroup.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, todo.GroupsTable, todo.GroupsPrimaryKey...),
+		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.TodoGroup
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryTodoReminders chains the current query on the "todo_reminders" edge.
 func (_q *TodoQuery) QueryTodoReminders() *TodoReminderQuery {
 	query := (&TodoReminderClient{config: _q.config}).Query()
@@ -140,6 +171,31 @@ func (_q *TodoQuery) QueryTodoReminders() *TodoReminderQuery {
 		schemaConfig := _q.schemaConfig
 		step.To.Schema = schemaConfig.TodoReminder
 		step.Edge.Schema = schemaConfig.TodoReminder
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroupedTodos chains the current query on the "grouped_todos" edge.
+func (_q *TodoQuery) QueryGroupedTodos() *TodoToTodoGroupAssociationQuery {
+	query := (&TodoToTodoGroupAssociationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, selector),
+			sqlgraph.To(todototodogroupassociation.Table, todototodogroupassociation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, todo.GroupedTodosTable, todo.GroupedTodosColumn),
+		)
+		schemaConfig := _q.schemaConfig
+		step.To.Schema = schemaConfig.TodoToTodoGroupAssociation
+		step.Edge.Schema = schemaConfig.TodoToTodoGroupAssociation
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
@@ -340,7 +396,9 @@ func (_q *TodoQuery) Clone() *TodoQuery {
 		predicates:        append([]predicate.Todo{}, _q.predicates...),
 		withOwner:         _q.withOwner.Clone(),
 		withReminders:     _q.withReminders.Clone(),
+		withGroups:        _q.withGroups.Clone(),
 		withTodoReminders: _q.withTodoReminders.Clone(),
+		withGroupedTodos:  _q.withGroupedTodos.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -370,6 +428,17 @@ func (_q *TodoQuery) WithReminders(opts ...func(*ReminderQuery)) *TodoQuery {
 	return _q
 }
 
+// WithGroups tells the query-builder to eager-load the nodes that are connected to
+// the "groups" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TodoQuery) WithGroups(opts ...func(*TodoGroupQuery)) *TodoQuery {
+	query := (&TodoGroupClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGroups = query
+	return _q
+}
+
 // WithTodoReminders tells the query-builder to eager-load the nodes that are connected to
 // the "todo_reminders" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *TodoQuery) WithTodoReminders(opts ...func(*TodoReminderQuery)) *TodoQuery {
@@ -378,6 +447,17 @@ func (_q *TodoQuery) WithTodoReminders(opts ...func(*TodoReminderQuery)) *TodoQu
 		opt(query)
 	}
 	_q.withTodoReminders = query
+	return _q
+}
+
+// WithGroupedTodos tells the query-builder to eager-load the nodes that are connected to
+// the "grouped_todos" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TodoQuery) WithGroupedTodos(opts ...func(*TodoToTodoGroupAssociationQuery)) *TodoQuery {
+	query := (&TodoToTodoGroupAssociationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGroupedTodos = query
 	return _q
 }
 
@@ -459,10 +539,12 @@ func (_q *TodoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Todo, e
 	var (
 		nodes       = []*Todo{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			_q.withOwner != nil,
 			_q.withReminders != nil,
+			_q.withGroups != nil,
 			_q.withTodoReminders != nil,
+			_q.withGroupedTodos != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -501,10 +583,24 @@ func (_q *TodoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Todo, e
 			return nil, err
 		}
 	}
+	if query := _q.withGroups; query != nil {
+		if err := _q.loadGroups(ctx, query, nodes,
+			func(n *Todo) { n.Edges.Groups = []*TodoGroup{} },
+			func(n *Todo, e *TodoGroup) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withTodoReminders; query != nil {
 		if err := _q.loadTodoReminders(ctx, query, nodes,
 			func(n *Todo) { n.Edges.TodoReminders = []*TodoReminder{} },
 			func(n *Todo, e *TodoReminder) { n.Edges.TodoReminders = append(n.Edges.TodoReminders, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGroupedTodos; query != nil {
+		if err := _q.loadGroupedTodos(ctx, query, nodes,
+			func(n *Todo) { n.Edges.GroupedTodos = []*TodoToTodoGroupAssociation{} },
+			func(n *Todo, e *TodoToTodoGroupAssociation) { n.Edges.GroupedTodos = append(n.Edges.GroupedTodos, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -515,10 +611,24 @@ func (_q *TodoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Todo, e
 			return nil, err
 		}
 	}
+	for name, query := range _q.withNamedGroups {
+		if err := _q.loadGroups(ctx, query, nodes,
+			func(n *Todo) { n.appendNamedGroups(name) },
+			func(n *Todo, e *TodoGroup) { n.appendNamedGroups(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedTodoReminders {
 		if err := _q.loadTodoReminders(ctx, query, nodes,
 			func(n *Todo) { n.appendNamedTodoReminders(name) },
 			func(n *Todo, e *TodoReminder) { n.appendNamedTodoReminders(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedGroupedTodos {
+		if err := _q.loadGroupedTodos(ctx, query, nodes,
+			func(n *Todo) { n.appendNamedGroupedTodos(name) },
+			func(n *Todo, e *TodoToTodoGroupAssociation) { n.appendNamedGroupedTodos(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -621,6 +731,68 @@ func (_q *TodoQuery) loadReminders(ctx context.Context, query *ReminderQuery, no
 	}
 	return nil
 }
+func (_q *TodoQuery) loadGroups(ctx context.Context, query *TodoGroupQuery, nodes []*Todo, init func(*Todo), assign func(*Todo, *TodoGroup)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Todo)
+	nids := make(map[int]map[*Todo]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(todo.GroupsTable)
+		joinT.Schema(_q.schemaConfig.TodoToTodoGroupAssociation)
+		s.Join(joinT).On(s.C(todogroup.FieldID), joinT.C(todo.GroupsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(todo.GroupsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(todo.GroupsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Todo]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*TodoGroup](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "groups" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 func (_q *TodoQuery) loadTodoReminders(ctx context.Context, query *TodoReminderQuery, nodes []*Todo, init func(*Todo), assign func(*Todo, *TodoReminder)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Todo)
@@ -646,6 +818,36 @@ func (_q *TodoQuery) loadTodoReminders(ctx context.Context, query *TodoReminderQ
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "todo_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TodoQuery) loadGroupedTodos(ctx context.Context, query *TodoToTodoGroupAssociationQuery, nodes []*Todo, init func(*Todo), assign func(*Todo, *TodoToTodoGroupAssociation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Todo)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(todototodogroupassociation.FieldTodoID)
+	}
+	query.Where(predicate.TodoToTodoGroupAssociation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(todo.GroupedTodosColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TodoID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "todo_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -767,6 +969,20 @@ func (_q *TodoQuery) WithNamedReminders(name string, opts ...func(*ReminderQuery
 	return _q
 }
 
+// WithNamedGroups tells the query-builder to eager-load the nodes that are connected to the "groups"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *TodoQuery) WithNamedGroups(name string, opts ...func(*TodoGroupQuery)) *TodoQuery {
+	query := (&TodoGroupClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedGroups == nil {
+		_q.withNamedGroups = make(map[string]*TodoGroupQuery)
+	}
+	_q.withNamedGroups[name] = query
+	return _q
+}
+
 // WithNamedTodoReminders tells the query-builder to eager-load the nodes that are connected to the "todo_reminders"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (_q *TodoQuery) WithNamedTodoReminders(name string, opts ...func(*TodoReminderQuery)) *TodoQuery {
@@ -778,6 +994,20 @@ func (_q *TodoQuery) WithNamedTodoReminders(name string, opts ...func(*TodoRemin
 		_q.withNamedTodoReminders = make(map[string]*TodoReminderQuery)
 	}
 	_q.withNamedTodoReminders[name] = query
+	return _q
+}
+
+// WithNamedGroupedTodos tells the query-builder to eager-load the nodes that are connected to the "grouped_todos"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *TodoQuery) WithNamedGroupedTodos(name string, opts ...func(*TodoToTodoGroupAssociationQuery)) *TodoQuery {
+	query := (&TodoToTodoGroupAssociationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedGroupedTodos == nil {
+		_q.withNamedGroupedTodos = make(map[string]*TodoToTodoGroupAssociationQuery)
+	}
+	_q.withNamedGroupedTodos[name] = query
 	return _q
 }
 

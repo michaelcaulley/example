@@ -8,7 +8,9 @@ import (
 	"example/internal/ent/moderator"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
 	"example/internal/ent/todoreminder"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 	"reflect"
@@ -77,11 +79,13 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			moderator.Table:    moderator.ValidColumn,
-			reminder.Table:     reminder.ValidColumn,
-			todo.Table:         todo.ValidColumn,
-			todoreminder.Table: todoreminder.ValidColumn,
-			user.Table:         user.ValidColumn,
+			moderator.Table:                  moderator.ValidColumn,
+			reminder.Table:                   reminder.ValidColumn,
+			todo.Table:                       todo.ValidColumn,
+			todogroup.Table:                  todogroup.ValidColumn,
+			todoreminder.Table:               todoreminder.ValidColumn,
+			todototodogroupassociation.Table: todototodogroupassociation.ValidColumn,
+			user.Table:                       user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

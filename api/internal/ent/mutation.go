@@ -9,7 +9,9 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
 	"example/internal/ent/todoreminder"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 	"sync"
@@ -28,11 +30,13 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeModerator    = "Moderator"
-	TypeReminder     = "Reminder"
-	TypeTodo         = "Todo"
-	TypeTodoReminder = "TodoReminder"
-	TypeUser         = "User"
+	TypeModerator                  = "Moderator"
+	TypeReminder                   = "Reminder"
+	TypeTodo                       = "Todo"
+	TypeTodoGroup                  = "TodoGroup"
+	TypeTodoReminder               = "TodoReminder"
+	TypeTodoToTodoGroupAssociation = "TodoToTodoGroupAssociation"
+	TypeUser                       = "User"
 )
 
 // ModeratorMutation represents an operation that mutates the Moderator nodes in the graph.
@@ -906,20 +910,26 @@ func (m *ReminderMutation) ResetEdge(name string) error {
 // TodoMutation represents an operation that mutates the Todo nodes in the graph.
 type TodoMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	text             *string
-	done_at          *time.Time
-	clearedFields    map[string]struct{}
-	owner            *int
-	clearedowner     bool
-	reminders        map[int]struct{}
-	removedreminders map[int]struct{}
-	clearedreminders bool
-	done             bool
-	oldValue         func(context.Context) (*Todo, error)
-	predicates       []predicate.Todo
+	op                   Op
+	typ                  string
+	id                   *int
+	text                 *string
+	done_at              *time.Time
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	reminders            map[int]struct{}
+	removedreminders     map[int]struct{}
+	clearedreminders     bool
+	groups               map[int]struct{}
+	removedgroups        map[int]struct{}
+	clearedgroups        bool
+	grouped_todos        map[int]struct{}
+	removedgrouped_todos map[int]struct{}
+	clearedgrouped_todos bool
+	done                 bool
+	oldValue             func(context.Context) (*Todo, error)
+	predicates           []predicate.Todo
 }
 
 var _ ent.Mutation = (*TodoMutation)(nil)
@@ -1222,6 +1232,114 @@ func (m *TodoMutation) ResetReminders() {
 	m.removedreminders = nil
 }
 
+// AddGroupIDs adds the "groups" edge to the TodoGroup entity by ids.
+func (m *TodoMutation) AddGroupIDs(ids ...int) {
+	if m.groups == nil {
+		m.groups = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.groups[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroups clears the "groups" edge to the TodoGroup entity.
+func (m *TodoMutation) ClearGroups() {
+	m.clearedgroups = true
+}
+
+// GroupsCleared reports if the "groups" edge to the TodoGroup entity was cleared.
+func (m *TodoMutation) GroupsCleared() bool {
+	return m.clearedgroups
+}
+
+// RemoveGroupIDs removes the "groups" edge to the TodoGroup entity by IDs.
+func (m *TodoMutation) RemoveGroupIDs(ids ...int) {
+	if m.removedgroups == nil {
+		m.removedgroups = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.groups, ids[i])
+		m.removedgroups[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroups returns the removed IDs of the "groups" edge to the TodoGroup entity.
+func (m *TodoMutation) RemovedGroupsIDs() (ids []int) {
+	for id := range m.removedgroups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroupsIDs returns the "groups" edge IDs in the mutation.
+func (m *TodoMutation) GroupsIDs() (ids []int) {
+	for id := range m.groups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroups resets all changes to the "groups" edge.
+func (m *TodoMutation) ResetGroups() {
+	m.groups = nil
+	m.clearedgroups = false
+	m.removedgroups = nil
+}
+
+// AddGroupedTodoIDs adds the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by ids.
+func (m *TodoMutation) AddGroupedTodoIDs(ids ...int) {
+	if m.grouped_todos == nil {
+		m.grouped_todos = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.grouped_todos[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroupedTodos clears the "grouped_todos" edge to the TodoToTodoGroupAssociation entity.
+func (m *TodoMutation) ClearGroupedTodos() {
+	m.clearedgrouped_todos = true
+}
+
+// GroupedTodosCleared reports if the "grouped_todos" edge to the TodoToTodoGroupAssociation entity was cleared.
+func (m *TodoMutation) GroupedTodosCleared() bool {
+	return m.clearedgrouped_todos
+}
+
+// RemoveGroupedTodoIDs removes the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by IDs.
+func (m *TodoMutation) RemoveGroupedTodoIDs(ids ...int) {
+	if m.removedgrouped_todos == nil {
+		m.removedgrouped_todos = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.grouped_todos, ids[i])
+		m.removedgrouped_todos[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroupedTodos returns the removed IDs of the "grouped_todos" edge to the TodoToTodoGroupAssociation entity.
+func (m *TodoMutation) RemovedGroupedTodosIDs() (ids []int) {
+	for id := range m.removedgrouped_todos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroupedTodosIDs returns the "grouped_todos" edge IDs in the mutation.
+func (m *TodoMutation) GroupedTodosIDs() (ids []int) {
+	for id := range m.grouped_todos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroupedTodos resets all changes to the "grouped_todos" edge.
+func (m *TodoMutation) ResetGroupedTodos() {
+	m.grouped_todos = nil
+	m.clearedgrouped_todos = false
+	m.removedgrouped_todos = nil
+}
+
 // Where appends a list predicates to the TodoMutation builder.
 func (m *TodoMutation) Where(ps ...predicate.Todo) {
 	m.predicates = append(m.predicates, ps...)
@@ -1401,12 +1519,18 @@ func (m *TodoMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TodoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.owner != nil {
 		edges = append(edges, todo.EdgeOwner)
 	}
 	if m.reminders != nil {
 		edges = append(edges, todo.EdgeReminders)
+	}
+	if m.groups != nil {
+		edges = append(edges, todo.EdgeGroups)
+	}
+	if m.grouped_todos != nil {
+		edges = append(edges, todo.EdgeGroupedTodos)
 	}
 	return edges
 }
@@ -1425,15 +1549,33 @@ func (m *TodoMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case todo.EdgeGroups:
+		ids := make([]ent.Value, 0, len(m.groups))
+		for id := range m.groups {
+			ids = append(ids, id)
+		}
+		return ids
+	case todo.EdgeGroupedTodos:
+		ids := make([]ent.Value, 0, len(m.grouped_todos))
+		for id := range m.grouped_todos {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TodoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.removedreminders != nil {
 		edges = append(edges, todo.EdgeReminders)
+	}
+	if m.removedgroups != nil {
+		edges = append(edges, todo.EdgeGroups)
+	}
+	if m.removedgrouped_todos != nil {
+		edges = append(edges, todo.EdgeGroupedTodos)
 	}
 	return edges
 }
@@ -1448,18 +1590,36 @@ func (m *TodoMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case todo.EdgeGroups:
+		ids := make([]ent.Value, 0, len(m.removedgroups))
+		for id := range m.removedgroups {
+			ids = append(ids, id)
+		}
+		return ids
+	case todo.EdgeGroupedTodos:
+		ids := make([]ent.Value, 0, len(m.removedgrouped_todos))
+		for id := range m.removedgrouped_todos {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TodoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedowner {
 		edges = append(edges, todo.EdgeOwner)
 	}
 	if m.clearedreminders {
 		edges = append(edges, todo.EdgeReminders)
+	}
+	if m.clearedgroups {
+		edges = append(edges, todo.EdgeGroups)
+	}
+	if m.clearedgrouped_todos {
+		edges = append(edges, todo.EdgeGroupedTodos)
 	}
 	return edges
 }
@@ -1472,6 +1632,10 @@ func (m *TodoMutation) EdgeCleared(name string) bool {
 		return m.clearedowner
 	case todo.EdgeReminders:
 		return m.clearedreminders
+	case todo.EdgeGroups:
+		return m.clearedgroups
+	case todo.EdgeGroupedTodos:
+		return m.clearedgrouped_todos
 	}
 	return false
 }
@@ -1497,8 +1661,624 @@ func (m *TodoMutation) ResetEdge(name string) error {
 	case todo.EdgeReminders:
 		m.ResetReminders()
 		return nil
+	case todo.EdgeGroups:
+		m.ResetGroups()
+		return nil
+	case todo.EdgeGroupedTodos:
+		m.ResetGroupedTodos()
+		return nil
 	}
 	return fmt.Errorf("unknown Todo edge %s", name)
+}
+
+// TodoGroupMutation represents an operation that mutates the TodoGroup nodes in the graph.
+type TodoGroupMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	updated_at           *time.Time
+	name                 *string
+	clearedFields        map[string]struct{}
+	todos                map[int]struct{}
+	removedtodos         map[int]struct{}
+	clearedtodos         bool
+	grouped_todos        map[int]struct{}
+	removedgrouped_todos map[int]struct{}
+	clearedgrouped_todos bool
+	done                 bool
+	oldValue             func(context.Context) (*TodoGroup, error)
+	predicates           []predicate.TodoGroup
+}
+
+var _ ent.Mutation = (*TodoGroupMutation)(nil)
+
+// todogroupOption allows management of the mutation configuration using functional options.
+type todogroupOption func(*TodoGroupMutation)
+
+// newTodoGroupMutation creates new mutation for the TodoGroup entity.
+func newTodoGroupMutation(c config, op Op, opts ...todogroupOption) *TodoGroupMutation {
+	m := &TodoGroupMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTodoGroup,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTodoGroupID sets the ID field of the mutation.
+func withTodoGroupID(id int) todogroupOption {
+	return func(m *TodoGroupMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TodoGroup
+		)
+		m.oldValue = func(ctx context.Context) (*TodoGroup, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TodoGroup.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTodoGroup sets the old TodoGroup of the mutation.
+func withTodoGroup(node *TodoGroup) todogroupOption {
+	return func(m *TodoGroupMutation) {
+		m.oldValue = func(context.Context) (*TodoGroup, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TodoGroupMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TodoGroupMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TodoGroupMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TodoGroupMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().TodoGroup.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TodoGroupMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TodoGroupMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the TodoGroup entity.
+// If the TodoGroup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoGroupMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TodoGroupMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TodoGroupMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TodoGroupMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the TodoGroup entity.
+// If the TodoGroup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoGroupMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TodoGroupMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *TodoGroupMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *TodoGroupMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the TodoGroup entity.
+// If the TodoGroup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoGroupMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *TodoGroupMutation) ResetName() {
+	m.name = nil
+}
+
+// AddTodoIDs adds the "todos" edge to the Todo entity by ids.
+func (m *TodoGroupMutation) AddTodoIDs(ids ...int) {
+	if m.todos == nil {
+		m.todos = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.todos[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTodos clears the "todos" edge to the Todo entity.
+func (m *TodoGroupMutation) ClearTodos() {
+	m.clearedtodos = true
+}
+
+// TodosCleared reports if the "todos" edge to the Todo entity was cleared.
+func (m *TodoGroupMutation) TodosCleared() bool {
+	return m.clearedtodos
+}
+
+// RemoveTodoIDs removes the "todos" edge to the Todo entity by IDs.
+func (m *TodoGroupMutation) RemoveTodoIDs(ids ...int) {
+	if m.removedtodos == nil {
+		m.removedtodos = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.todos, ids[i])
+		m.removedtodos[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTodos returns the removed IDs of the "todos" edge to the Todo entity.
+func (m *TodoGroupMutation) RemovedTodosIDs() (ids []int) {
+	for id := range m.removedtodos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TodosIDs returns the "todos" edge IDs in the mutation.
+func (m *TodoGroupMutation) TodosIDs() (ids []int) {
+	for id := range m.todos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTodos resets all changes to the "todos" edge.
+func (m *TodoGroupMutation) ResetTodos() {
+	m.todos = nil
+	m.clearedtodos = false
+	m.removedtodos = nil
+}
+
+// AddGroupedTodoIDs adds the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by ids.
+func (m *TodoGroupMutation) AddGroupedTodoIDs(ids ...int) {
+	if m.grouped_todos == nil {
+		m.grouped_todos = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.grouped_todos[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroupedTodos clears the "grouped_todos" edge to the TodoToTodoGroupAssociation entity.
+func (m *TodoGroupMutation) ClearGroupedTodos() {
+	m.clearedgrouped_todos = true
+}
+
+// GroupedTodosCleared reports if the "grouped_todos" edge to the TodoToTodoGroupAssociation entity was cleared.
+func (m *TodoGroupMutation) GroupedTodosCleared() bool {
+	return m.clearedgrouped_todos
+}
+
+// RemoveGroupedTodoIDs removes the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by IDs.
+func (m *TodoGroupMutation) RemoveGroupedTodoIDs(ids ...int) {
+	if m.removedgrouped_todos == nil {
+		m.removedgrouped_todos = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.grouped_todos, ids[i])
+		m.removedgrouped_todos[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroupedTodos returns the removed IDs of the "grouped_todos" edge to the TodoToTodoGroupAssociation entity.
+func (m *TodoGroupMutation) RemovedGroupedTodosIDs() (ids []int) {
+	for id := range m.removedgrouped_todos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroupedTodosIDs returns the "grouped_todos" edge IDs in the mutation.
+func (m *TodoGroupMutation) GroupedTodosIDs() (ids []int) {
+	for id := range m.grouped_todos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroupedTodos resets all changes to the "grouped_todos" edge.
+func (m *TodoGroupMutation) ResetGroupedTodos() {
+	m.grouped_todos = nil
+	m.clearedgrouped_todos = false
+	m.removedgrouped_todos = nil
+}
+
+// Where appends a list predicates to the TodoGroupMutation builder.
+func (m *TodoGroupMutation) Where(ps ...predicate.TodoGroup) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TodoGroupMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TodoGroupMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TodoGroup, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TodoGroupMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TodoGroupMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TodoGroup).
+func (m *TodoGroupMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TodoGroupMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.created_at != nil {
+		fields = append(fields, todogroup.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, todogroup.FieldUpdatedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, todogroup.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TodoGroupMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case todogroup.FieldCreatedAt:
+		return m.CreatedAt()
+	case todogroup.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case todogroup.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TodoGroupMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case todogroup.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case todogroup.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case todogroup.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown TodoGroup field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoGroupMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case todogroup.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case todogroup.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case todogroup.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TodoGroup field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TodoGroupMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TodoGroupMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoGroupMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TodoGroup numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TodoGroupMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TodoGroupMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TodoGroupMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown TodoGroup nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TodoGroupMutation) ResetField(name string) error {
+	switch name {
+	case todogroup.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case todogroup.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case todogroup.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoGroup field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TodoGroupMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.todos != nil {
+		edges = append(edges, todogroup.EdgeTodos)
+	}
+	if m.grouped_todos != nil {
+		edges = append(edges, todogroup.EdgeGroupedTodos)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TodoGroupMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case todogroup.EdgeTodos:
+		ids := make([]ent.Value, 0, len(m.todos))
+		for id := range m.todos {
+			ids = append(ids, id)
+		}
+		return ids
+	case todogroup.EdgeGroupedTodos:
+		ids := make([]ent.Value, 0, len(m.grouped_todos))
+		for id := range m.grouped_todos {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TodoGroupMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedtodos != nil {
+		edges = append(edges, todogroup.EdgeTodos)
+	}
+	if m.removedgrouped_todos != nil {
+		edges = append(edges, todogroup.EdgeGroupedTodos)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TodoGroupMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case todogroup.EdgeTodos:
+		ids := make([]ent.Value, 0, len(m.removedtodos))
+		for id := range m.removedtodos {
+			ids = append(ids, id)
+		}
+		return ids
+	case todogroup.EdgeGroupedTodos:
+		ids := make([]ent.Value, 0, len(m.removedgrouped_todos))
+		for id := range m.removedgrouped_todos {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TodoGroupMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedtodos {
+		edges = append(edges, todogroup.EdgeTodos)
+	}
+	if m.clearedgrouped_todos {
+		edges = append(edges, todogroup.EdgeGroupedTodos)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TodoGroupMutation) EdgeCleared(name string) bool {
+	switch name {
+	case todogroup.EdgeTodos:
+		return m.clearedtodos
+	case todogroup.EdgeGroupedTodos:
+		return m.clearedgrouped_todos
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TodoGroupMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TodoGroup unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TodoGroupMutation) ResetEdge(name string) error {
+	switch name {
+	case todogroup.EdgeTodos:
+		m.ResetTodos()
+		return nil
+	case todogroup.EdgeGroupedTodos:
+		m.ResetGroupedTodos()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoGroup edge %s", name)
 }
 
 // TodoReminderMutation represents an operation that mutates the TodoReminder nodes in the graph.
@@ -1881,6 +2661,697 @@ func (m *TodoReminderMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown TodoReminder edge %s", name)
+}
+
+// TodoToTodoGroupAssociationMutation represents an operation that mutates the TodoToTodoGroupAssociation nodes in the graph.
+type TodoToTodoGroupAssociationMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	created_at        *time.Time
+	updated_at        *time.Time
+	assignee_id       *int
+	addassignee_id    *int
+	clearedFields     map[string]struct{}
+	todo              *int
+	clearedtodo       bool
+	todo_group        *int
+	clearedtodo_group bool
+	done              bool
+	oldValue          func(context.Context) (*TodoToTodoGroupAssociation, error)
+	predicates        []predicate.TodoToTodoGroupAssociation
+}
+
+var _ ent.Mutation = (*TodoToTodoGroupAssociationMutation)(nil)
+
+// todototodogroupassociationOption allows management of the mutation configuration using functional options.
+type todototodogroupassociationOption func(*TodoToTodoGroupAssociationMutation)
+
+// newTodoToTodoGroupAssociationMutation creates new mutation for the TodoToTodoGroupAssociation entity.
+func newTodoToTodoGroupAssociationMutation(c config, op Op, opts ...todototodogroupassociationOption) *TodoToTodoGroupAssociationMutation {
+	m := &TodoToTodoGroupAssociationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTodoToTodoGroupAssociation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTodoToTodoGroupAssociationID sets the ID field of the mutation.
+func withTodoToTodoGroupAssociationID(id int) todototodogroupassociationOption {
+	return func(m *TodoToTodoGroupAssociationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TodoToTodoGroupAssociation
+		)
+		m.oldValue = func(ctx context.Context) (*TodoToTodoGroupAssociation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TodoToTodoGroupAssociation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTodoToTodoGroupAssociation sets the old TodoToTodoGroupAssociation of the mutation.
+func withTodoToTodoGroupAssociation(node *TodoToTodoGroupAssociation) todototodogroupassociationOption {
+	return func(m *TodoToTodoGroupAssociationMutation) {
+		m.oldValue = func(context.Context) (*TodoToTodoGroupAssociation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TodoToTodoGroupAssociationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TodoToTodoGroupAssociationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TodoToTodoGroupAssociationMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TodoToTodoGroupAssociationMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().TodoToTodoGroupAssociation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TodoToTodoGroupAssociationMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the TodoToTodoGroupAssociation entity.
+// If the TodoToTodoGroupAssociation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoToTodoGroupAssociationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TodoToTodoGroupAssociationMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TodoToTodoGroupAssociationMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the TodoToTodoGroupAssociation entity.
+// If the TodoToTodoGroupAssociation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoToTodoGroupAssociationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TodoToTodoGroupAssociationMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTodoID sets the "todo_id" field.
+func (m *TodoToTodoGroupAssociationMutation) SetTodoID(i int) {
+	m.todo = &i
+}
+
+// TodoID returns the value of the "todo_id" field in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) TodoID() (r int, exists bool) {
+	v := m.todo
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTodoID returns the old "todo_id" field's value of the TodoToTodoGroupAssociation entity.
+// If the TodoToTodoGroupAssociation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoToTodoGroupAssociationMutation) OldTodoID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTodoID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTodoID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTodoID: %w", err)
+	}
+	return oldValue.TodoID, nil
+}
+
+// ResetTodoID resets all changes to the "todo_id" field.
+func (m *TodoToTodoGroupAssociationMutation) ResetTodoID() {
+	m.todo = nil
+}
+
+// SetTodoGroupReallyReallyLongIdentifier sets the "todo_group_really_really_long_identifier" field.
+func (m *TodoToTodoGroupAssociationMutation) SetTodoGroupReallyReallyLongIdentifier(i int) {
+	m.todo_group = &i
+}
+
+// TodoGroupReallyReallyLongIdentifier returns the value of the "todo_group_really_really_long_identifier" field in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) TodoGroupReallyReallyLongIdentifier() (r int, exists bool) {
+	v := m.todo_group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTodoGroupReallyReallyLongIdentifier returns the old "todo_group_really_really_long_identifier" field's value of the TodoToTodoGroupAssociation entity.
+// If the TodoToTodoGroupAssociation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoToTodoGroupAssociationMutation) OldTodoGroupReallyReallyLongIdentifier(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTodoGroupReallyReallyLongIdentifier is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTodoGroupReallyReallyLongIdentifier requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTodoGroupReallyReallyLongIdentifier: %w", err)
+	}
+	return oldValue.TodoGroupReallyReallyLongIdentifier, nil
+}
+
+// ResetTodoGroupReallyReallyLongIdentifier resets all changes to the "todo_group_really_really_long_identifier" field.
+func (m *TodoToTodoGroupAssociationMutation) ResetTodoGroupReallyReallyLongIdentifier() {
+	m.todo_group = nil
+}
+
+// SetAssigneeID sets the "assignee_id" field.
+func (m *TodoToTodoGroupAssociationMutation) SetAssigneeID(i int) {
+	m.assignee_id = &i
+	m.addassignee_id = nil
+}
+
+// AssigneeID returns the value of the "assignee_id" field in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) AssigneeID() (r int, exists bool) {
+	v := m.assignee_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAssigneeID returns the old "assignee_id" field's value of the TodoToTodoGroupAssociation entity.
+// If the TodoToTodoGroupAssociation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TodoToTodoGroupAssociationMutation) OldAssigneeID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAssigneeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAssigneeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAssigneeID: %w", err)
+	}
+	return oldValue.AssigneeID, nil
+}
+
+// AddAssigneeID adds i to the "assignee_id" field.
+func (m *TodoToTodoGroupAssociationMutation) AddAssigneeID(i int) {
+	if m.addassignee_id != nil {
+		*m.addassignee_id += i
+	} else {
+		m.addassignee_id = &i
+	}
+}
+
+// AddedAssigneeID returns the value that was added to the "assignee_id" field in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) AddedAssigneeID() (r int, exists bool) {
+	v := m.addassignee_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAssigneeID resets all changes to the "assignee_id" field.
+func (m *TodoToTodoGroupAssociationMutation) ResetAssigneeID() {
+	m.assignee_id = nil
+	m.addassignee_id = nil
+}
+
+// ClearTodo clears the "todo" edge to the Todo entity.
+func (m *TodoToTodoGroupAssociationMutation) ClearTodo() {
+	m.clearedtodo = true
+	m.clearedFields[todototodogroupassociation.FieldTodoID] = struct{}{}
+}
+
+// TodoCleared reports if the "todo" edge to the Todo entity was cleared.
+func (m *TodoToTodoGroupAssociationMutation) TodoCleared() bool {
+	return m.clearedtodo
+}
+
+// TodoIDs returns the "todo" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TodoID instead. It exists only for internal usage by the builders.
+func (m *TodoToTodoGroupAssociationMutation) TodoIDs() (ids []int) {
+	if id := m.todo; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTodo resets all changes to the "todo" edge.
+func (m *TodoToTodoGroupAssociationMutation) ResetTodo() {
+	m.todo = nil
+	m.clearedtodo = false
+}
+
+// SetTodoGroupID sets the "todo_group" edge to the TodoGroup entity by id.
+func (m *TodoToTodoGroupAssociationMutation) SetTodoGroupID(id int) {
+	m.todo_group = &id
+}
+
+// ClearTodoGroup clears the "todo_group" edge to the TodoGroup entity.
+func (m *TodoToTodoGroupAssociationMutation) ClearTodoGroup() {
+	m.clearedtodo_group = true
+	m.clearedFields[todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier] = struct{}{}
+}
+
+// TodoGroupCleared reports if the "todo_group" edge to the TodoGroup entity was cleared.
+func (m *TodoToTodoGroupAssociationMutation) TodoGroupCleared() bool {
+	return m.clearedtodo_group
+}
+
+// TodoGroupID returns the "todo_group" edge ID in the mutation.
+func (m *TodoToTodoGroupAssociationMutation) TodoGroupID() (id int, exists bool) {
+	if m.todo_group != nil {
+		return *m.todo_group, true
+	}
+	return
+}
+
+// TodoGroupIDs returns the "todo_group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TodoGroupID instead. It exists only for internal usage by the builders.
+func (m *TodoToTodoGroupAssociationMutation) TodoGroupIDs() (ids []int) {
+	if id := m.todo_group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTodoGroup resets all changes to the "todo_group" edge.
+func (m *TodoToTodoGroupAssociationMutation) ResetTodoGroup() {
+	m.todo_group = nil
+	m.clearedtodo_group = false
+}
+
+// Where appends a list predicates to the TodoToTodoGroupAssociationMutation builder.
+func (m *TodoToTodoGroupAssociationMutation) Where(ps ...predicate.TodoToTodoGroupAssociation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TodoToTodoGroupAssociationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TodoToTodoGroupAssociationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TodoToTodoGroupAssociation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TodoToTodoGroupAssociationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TodoToTodoGroupAssociationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TodoToTodoGroupAssociation).
+func (m *TodoToTodoGroupAssociationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TodoToTodoGroupAssociationMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.created_at != nil {
+		fields = append(fields, todototodogroupassociation.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, todototodogroupassociation.FieldUpdatedAt)
+	}
+	if m.todo != nil {
+		fields = append(fields, todototodogroupassociation.FieldTodoID)
+	}
+	if m.todo_group != nil {
+		fields = append(fields, todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier)
+	}
+	if m.assignee_id != nil {
+		fields = append(fields, todototodogroupassociation.FieldAssigneeID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TodoToTodoGroupAssociationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case todototodogroupassociation.FieldCreatedAt:
+		return m.CreatedAt()
+	case todototodogroupassociation.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case todototodogroupassociation.FieldTodoID:
+		return m.TodoID()
+	case todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier:
+		return m.TodoGroupReallyReallyLongIdentifier()
+	case todototodogroupassociation.FieldAssigneeID:
+		return m.AssigneeID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TodoToTodoGroupAssociationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case todototodogroupassociation.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case todototodogroupassociation.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case todototodogroupassociation.FieldTodoID:
+		return m.OldTodoID(ctx)
+	case todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier:
+		return m.OldTodoGroupReallyReallyLongIdentifier(ctx)
+	case todototodogroupassociation.FieldAssigneeID:
+		return m.OldAssigneeID(ctx)
+	}
+	return nil, fmt.Errorf("unknown TodoToTodoGroupAssociation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoToTodoGroupAssociationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case todototodogroupassociation.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case todototodogroupassociation.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case todototodogroupassociation.FieldTodoID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTodoID(v)
+		return nil
+	case todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTodoGroupReallyReallyLongIdentifier(v)
+		return nil
+	case todototodogroupassociation.FieldAssigneeID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAssigneeID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TodoToTodoGroupAssociationMutation) AddedFields() []string {
+	var fields []string
+	if m.addassignee_id != nil {
+		fields = append(fields, todototodogroupassociation.FieldAssigneeID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TodoToTodoGroupAssociationMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case todototodogroupassociation.FieldAssigneeID:
+		return m.AddedAssigneeID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TodoToTodoGroupAssociationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case todototodogroupassociation.FieldAssigneeID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAssigneeID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TodoToTodoGroupAssociationMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TodoToTodoGroupAssociationMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TodoToTodoGroupAssociationMutation) ResetField(name string) error {
+	switch name {
+	case todototodogroupassociation.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case todototodogroupassociation.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case todototodogroupassociation.FieldTodoID:
+		m.ResetTodoID()
+		return nil
+	case todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier:
+		m.ResetTodoGroupReallyReallyLongIdentifier()
+		return nil
+	case todototodogroupassociation.FieldAssigneeID:
+		m.ResetAssigneeID()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.todo != nil {
+		edges = append(edges, todototodogroupassociation.EdgeTodo)
+	}
+	if m.todo_group != nil {
+		edges = append(edges, todototodogroupassociation.EdgeTodoGroup)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case todototodogroupassociation.EdgeTodo:
+		if id := m.todo; id != nil {
+			return []ent.Value{*id}
+		}
+	case todototodogroupassociation.EdgeTodoGroup:
+		if id := m.todo_group; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedtodo {
+		edges = append(edges, todototodogroupassociation.EdgeTodo)
+	}
+	if m.clearedtodo_group {
+		edges = append(edges, todototodogroupassociation.EdgeTodoGroup)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TodoToTodoGroupAssociationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case todototodogroupassociation.EdgeTodo:
+		return m.clearedtodo
+	case todototodogroupassociation.EdgeTodoGroup:
+		return m.clearedtodo_group
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TodoToTodoGroupAssociationMutation) ClearEdge(name string) error {
+	switch name {
+	case todototodogroupassociation.EdgeTodo:
+		m.ClearTodo()
+		return nil
+	case todototodogroupassociation.EdgeTodoGroup:
+		m.ClearTodoGroup()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TodoToTodoGroupAssociationMutation) ResetEdge(name string) error {
+	switch name {
+	case todototodogroupassociation.EdgeTodo:
+		m.ResetTodo()
+		return nil
+	case todototodogroupassociation.EdgeTodoGroup:
+		m.ResetTodoGroup()
+		return nil
+	}
+	return fmt.Errorf("unknown TodoToTodoGroupAssociation edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

@@ -7,6 +7,8 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 	"time"
@@ -283,6 +285,14 @@ type TodoWhereInput struct {
 	// "reminders" edge predicates.
 	HasReminders     *bool                 `json:"hasReminders,omitempty"`
 	HasRemindersWith []*ReminderWhereInput `json:"hasRemindersWith,omitempty"`
+
+	// "groups" edge predicates.
+	HasGroups     *bool                  `json:"hasGroups,omitempty"`
+	HasGroupsWith []*TodoGroupWhereInput `json:"hasGroupsWith,omitempty"`
+
+	// "grouped_todos" edge predicates.
+	HasGroupedTodos     *bool                                   `json:"hasGroupedTodos,omitempty"`
+	HasGroupedTodosWith []*TodoToTodoGroupAssociationWhereInput `json:"hasGroupedTodosWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -498,6 +508,42 @@ func (i *TodoWhereInput) P() (predicate.Todo, error) {
 		}
 		predicates = append(predicates, todo.HasRemindersWith(with...))
 	}
+	if i.HasGroups != nil {
+		p := todo.HasGroups()
+		if !*i.HasGroups {
+			p = todo.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGroupsWith) > 0 {
+		with := make([]predicate.TodoGroup, 0, len(i.HasGroupsWith))
+		for _, w := range i.HasGroupsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGroupsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todo.HasGroupsWith(with...))
+	}
+	if i.HasGroupedTodos != nil {
+		p := todo.HasGroupedTodos()
+		if !*i.HasGroupedTodos {
+			p = todo.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGroupedTodosWith) > 0 {
+		with := make([]predicate.TodoToTodoGroupAssociation, 0, len(i.HasGroupedTodosWith))
+		for _, w := range i.HasGroupedTodosWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGroupedTodosWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todo.HasGroupedTodosWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyTodoWhereInput
@@ -505,6 +551,602 @@ func (i *TodoWhereInput) P() (predicate.Todo, error) {
 		return predicates[0], nil
 	default:
 		return todo.And(predicates...), nil
+	}
+}
+
+// TodoGroupWhereInput represents a where input for filtering TodoGroup queries.
+type TodoGroupWhereInput struct {
+	Predicates []predicate.TodoGroup  `json:"-"`
+	Not        *TodoGroupWhereInput   `json:"not,omitempty"`
+	Or         []*TodoGroupWhereInput `json:"or,omitempty"`
+	And        []*TodoGroupWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "todos" edge predicates.
+	HasTodos     *bool             `json:"hasTodos,omitempty"`
+	HasTodosWith []*TodoWhereInput `json:"hasTodosWith,omitempty"`
+
+	// "grouped_todos" edge predicates.
+	HasGroupedTodos     *bool                                   `json:"hasGroupedTodos,omitempty"`
+	HasGroupedTodosWith []*TodoToTodoGroupAssociationWhereInput `json:"hasGroupedTodosWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *TodoGroupWhereInput) AddPredicates(predicates ...predicate.TodoGroup) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the TodoGroupWhereInput filter on the TodoGroupQuery builder.
+func (i *TodoGroupWhereInput) Filter(q *TodoGroupQuery) (*TodoGroupQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyTodoGroupWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyTodoGroupWhereInput is returned in case the TodoGroupWhereInput is empty.
+var ErrEmptyTodoGroupWhereInput = errors.New("ent: empty predicate TodoGroupWhereInput")
+
+// P returns a predicate for filtering todogroups.
+// An error is returned if the input is empty or invalid.
+func (i *TodoGroupWhereInput) P() (predicate.TodoGroup, error) {
+	var predicates []predicate.TodoGroup
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, todogroup.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.TodoGroup, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, todogroup.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.TodoGroup, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, todogroup.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, todogroup.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, todogroup.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, todogroup.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, todogroup.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, todogroup.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, todogroup.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, todogroup.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, todogroup.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, todogroup.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, todogroup.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, todogroup.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, todogroup.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, todogroup.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, todogroup.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, todogroup.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, todogroup.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, todogroup.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, todogroup.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, todogroup.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, todogroup.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, todogroup.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, todogroup.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, todogroup.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, todogroup.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, todogroup.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, todogroup.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, todogroup.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, todogroup.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, todogroup.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, todogroup.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, todogroup.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, todogroup.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, todogroup.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, todogroup.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, todogroup.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, todogroup.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, todogroup.NameContainsFold(*i.NameContainsFold))
+	}
+
+	if i.HasTodos != nil {
+		p := todogroup.HasTodos()
+		if !*i.HasTodos {
+			p = todogroup.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTodosWith) > 0 {
+		with := make([]predicate.Todo, 0, len(i.HasTodosWith))
+		for _, w := range i.HasTodosWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTodosWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todogroup.HasTodosWith(with...))
+	}
+	if i.HasGroupedTodos != nil {
+		p := todogroup.HasGroupedTodos()
+		if !*i.HasGroupedTodos {
+			p = todogroup.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGroupedTodosWith) > 0 {
+		with := make([]predicate.TodoToTodoGroupAssociation, 0, len(i.HasGroupedTodosWith))
+		for _, w := range i.HasGroupedTodosWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGroupedTodosWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todogroup.HasGroupedTodosWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyTodoGroupWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return todogroup.And(predicates...), nil
+	}
+}
+
+// TodoToTodoGroupAssociationWhereInput represents a where input for filtering TodoToTodoGroupAssociation queries.
+type TodoToTodoGroupAssociationWhereInput struct {
+	Predicates []predicate.TodoToTodoGroupAssociation  `json:"-"`
+	Not        *TodoToTodoGroupAssociationWhereInput   `json:"not,omitempty"`
+	Or         []*TodoToTodoGroupAssociationWhereInput `json:"or,omitempty"`
+	And        []*TodoToTodoGroupAssociationWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "todo_id" field predicates.
+	TodoID      *int  `json:"todoID,omitempty"`
+	TodoIDNEQ   *int  `json:"todoIDNEQ,omitempty"`
+	TodoIDIn    []int `json:"todoIDIn,omitempty"`
+	TodoIDNotIn []int `json:"todoIDNotIn,omitempty"`
+
+	// "todo_group_really_really_long_identifier" field predicates.
+	TodoGroupReallyReallyLongIdentifier      *int  `json:"todoGroupReallyReallyLongIdentifier,omitempty"`
+	TodoGroupReallyReallyLongIdentifierNEQ   *int  `json:"todoGroupReallyReallyLongIdentifierNEQ,omitempty"`
+	TodoGroupReallyReallyLongIdentifierIn    []int `json:"todoGroupReallyReallyLongIdentifierIn,omitempty"`
+	TodoGroupReallyReallyLongIdentifierNotIn []int `json:"todoGroupReallyReallyLongIdentifierNotIn,omitempty"`
+
+	// "assignee_id" field predicates.
+	AssigneeID      *int  `json:"assigneeID,omitempty"`
+	AssigneeIDNEQ   *int  `json:"assigneeIDNEQ,omitempty"`
+	AssigneeIDIn    []int `json:"assigneeIDIn,omitempty"`
+	AssigneeIDNotIn []int `json:"assigneeIDNotIn,omitempty"`
+	AssigneeIDGT    *int  `json:"assigneeIDGT,omitempty"`
+	AssigneeIDGTE   *int  `json:"assigneeIDGTE,omitempty"`
+	AssigneeIDLT    *int  `json:"assigneeIDLT,omitempty"`
+	AssigneeIDLTE   *int  `json:"assigneeIDLTE,omitempty"`
+
+	// "todo" edge predicates.
+	HasTodo     *bool             `json:"hasTodo,omitempty"`
+	HasTodoWith []*TodoWhereInput `json:"hasTodoWith,omitempty"`
+
+	// "todo_group" edge predicates.
+	HasTodoGroup     *bool                  `json:"hasTodoGroup,omitempty"`
+	HasTodoGroupWith []*TodoGroupWhereInput `json:"hasTodoGroupWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *TodoToTodoGroupAssociationWhereInput) AddPredicates(predicates ...predicate.TodoToTodoGroupAssociation) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the TodoToTodoGroupAssociationWhereInput filter on the TodoToTodoGroupAssociationQuery builder.
+func (i *TodoToTodoGroupAssociationWhereInput) Filter(q *TodoToTodoGroupAssociationQuery) (*TodoToTodoGroupAssociationQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyTodoToTodoGroupAssociationWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyTodoToTodoGroupAssociationWhereInput is returned in case the TodoToTodoGroupAssociationWhereInput is empty.
+var ErrEmptyTodoToTodoGroupAssociationWhereInput = errors.New("ent: empty predicate TodoToTodoGroupAssociationWhereInput")
+
+// P returns a predicate for filtering todototodogroupassociations.
+// An error is returned if the input is empty or invalid.
+func (i *TodoToTodoGroupAssociationWhereInput) P() (predicate.TodoToTodoGroupAssociation, error) {
+	var predicates []predicate.TodoToTodoGroupAssociation
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, todototodogroupassociation.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.TodoToTodoGroupAssociation, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, todototodogroupassociation.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.TodoToTodoGroupAssociation, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, todototodogroupassociation.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, todototodogroupassociation.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, todototodogroupassociation.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, todototodogroupassociation.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, todototodogroupassociation.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, todototodogroupassociation.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, todototodogroupassociation.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, todototodogroupassociation.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.TodoID != nil {
+		predicates = append(predicates, todototodogroupassociation.TodoIDEQ(*i.TodoID))
+	}
+	if i.TodoIDNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.TodoIDNEQ(*i.TodoIDNEQ))
+	}
+	if len(i.TodoIDIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.TodoIDIn(i.TodoIDIn...))
+	}
+	if len(i.TodoIDNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.TodoIDNotIn(i.TodoIDNotIn...))
+	}
+	if i.TodoGroupReallyReallyLongIdentifier != nil {
+		predicates = append(predicates, todototodogroupassociation.TodoGroupReallyReallyLongIdentifierEQ(*i.TodoGroupReallyReallyLongIdentifier))
+	}
+	if i.TodoGroupReallyReallyLongIdentifierNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.TodoGroupReallyReallyLongIdentifierNEQ(*i.TodoGroupReallyReallyLongIdentifierNEQ))
+	}
+	if len(i.TodoGroupReallyReallyLongIdentifierIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.TodoGroupReallyReallyLongIdentifierIn(i.TodoGroupReallyReallyLongIdentifierIn...))
+	}
+	if len(i.TodoGroupReallyReallyLongIdentifierNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.TodoGroupReallyReallyLongIdentifierNotIn(i.TodoGroupReallyReallyLongIdentifierNotIn...))
+	}
+	if i.AssigneeID != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDEQ(*i.AssigneeID))
+	}
+	if i.AssigneeIDNEQ != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDNEQ(*i.AssigneeIDNEQ))
+	}
+	if len(i.AssigneeIDIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDIn(i.AssigneeIDIn...))
+	}
+	if len(i.AssigneeIDNotIn) > 0 {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDNotIn(i.AssigneeIDNotIn...))
+	}
+	if i.AssigneeIDGT != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDGT(*i.AssigneeIDGT))
+	}
+	if i.AssigneeIDGTE != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDGTE(*i.AssigneeIDGTE))
+	}
+	if i.AssigneeIDLT != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDLT(*i.AssigneeIDLT))
+	}
+	if i.AssigneeIDLTE != nil {
+		predicates = append(predicates, todototodogroupassociation.AssigneeIDLTE(*i.AssigneeIDLTE))
+	}
+
+	if i.HasTodo != nil {
+		p := todototodogroupassociation.HasTodo()
+		if !*i.HasTodo {
+			p = todototodogroupassociation.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTodoWith) > 0 {
+		with := make([]predicate.Todo, 0, len(i.HasTodoWith))
+		for _, w := range i.HasTodoWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTodoWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todototodogroupassociation.HasTodoWith(with...))
+	}
+	if i.HasTodoGroup != nil {
+		p := todototodogroupassociation.HasTodoGroup()
+		if !*i.HasTodoGroup {
+			p = todototodogroupassociation.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTodoGroupWith) > 0 {
+		with := make([]predicate.TodoGroup, 0, len(i.HasTodoGroupWith))
+		for _, w := range i.HasTodoGroupWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTodoGroupWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, todototodogroupassociation.HasTodoGroupWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyTodoToTodoGroupAssociationWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return todototodogroupassociation.And(predicates...), nil
 	}
 }
 

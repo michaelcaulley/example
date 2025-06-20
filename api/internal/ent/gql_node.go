@@ -6,10 +6,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/99designs/gqlgen/graphql"
+
 	"encoding/json"
 	"example/internal/ent/internal"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 
 	"entgo.io/contrib/entgql"
@@ -32,6 +36,16 @@ var todoImplementors = []string{"Todo", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Todo) IsNode() {}
+
+var todogroupImplementors = []string{"TodoGroup", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*TodoGroup) IsNode() {}
+
+var todototodogroupassociationImplementors = []string{"TodoToTodoGroupAssociation", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*TodoToTodoGroupAssociation) IsNode() {}
 
 var userImplementors = []string{"User", "Node"}
 
@@ -129,6 +143,24 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(todo.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, todoImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case todogroup.Table:
+		query := c.TodoGroup.Query().
+			Where(todogroup.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, todogroupImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case todototodogroupassociation.Table:
+		query := c.TodoToTodoGroupAssociation.Query().
+			Where(todototodogroupassociation.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, todototodogroupassociationImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -235,6 +267,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Todo.Query().
 			Where(todo.IDIn(ids...))
 		query, err := query.CollectFields(ctx, todoImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case todogroup.Table:
+		query := c.TodoGroup.Query().
+			Where(todogroup.IDIn(ids...))
+		query, err := query.CollectFields(ctx, todogroupImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case todototodogroupassociation.Table:
+		query := c.TodoToTodoGroupAssociation.Query().
+			Where(todototodogroupassociation.IDIn(ids...))
+		query, err := query.CollectFields(ctx, todototodogroupassociationImplementors...)
 		if err != nil {
 			return nil, err
 		}

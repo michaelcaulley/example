@@ -7,6 +7,8 @@ import (
 	"errors"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 	"io"
@@ -658,6 +660,634 @@ func (_m *Todo) ToEdge(order *TodoOrder) *TodoEdge {
 		order = DefaultTodoOrder
 	}
 	return &TodoEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// TodoGroupEdge is the edge representation of TodoGroup.
+type TodoGroupEdge struct {
+	Node   *TodoGroup `json:"node"`
+	Cursor Cursor     `json:"cursor"`
+}
+
+// TodoGroupConnection is the connection containing edges to TodoGroup.
+type TodoGroupConnection struct {
+	Edges      []*TodoGroupEdge `json:"edges"`
+	PageInfo   PageInfo         `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+func (c *TodoGroupConnection) build(nodes []*TodoGroup, pager *todogroupPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *TodoGroup
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *TodoGroup {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *TodoGroup {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*TodoGroupEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &TodoGroupEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// TodoGroupPaginateOption enables pagination customization.
+type TodoGroupPaginateOption func(*todogroupPager) error
+
+// WithTodoGroupOrder configures pagination ordering.
+func WithTodoGroupOrder(order *TodoGroupOrder) TodoGroupPaginateOption {
+	if order == nil {
+		order = DefaultTodoGroupOrder
+	}
+	o := *order
+	return func(pager *todogroupPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultTodoGroupOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithTodoGroupFilter configures pagination filter.
+func WithTodoGroupFilter(filter func(*TodoGroupQuery) (*TodoGroupQuery, error)) TodoGroupPaginateOption {
+	return func(pager *todogroupPager) error {
+		if filter == nil {
+			return errors.New("TodoGroupQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type todogroupPager struct {
+	reverse bool
+	order   *TodoGroupOrder
+	filter  func(*TodoGroupQuery) (*TodoGroupQuery, error)
+}
+
+func newTodoGroupPager(opts []TodoGroupPaginateOption, reverse bool) (*todogroupPager, error) {
+	pager := &todogroupPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultTodoGroupOrder
+	}
+	return pager, nil
+}
+
+func (p *todogroupPager) applyFilter(query *TodoGroupQuery) (*TodoGroupQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *todogroupPager) toCursor(_m *TodoGroup) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *todogroupPager) applyCursors(query *TodoGroupQuery, after, before *Cursor) (*TodoGroupQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultTodoGroupOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *todogroupPager) applyOrder(query *TodoGroupQuery) *TodoGroupQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultTodoGroupOrder.Field {
+		query = query.Order(DefaultTodoGroupOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *todogroupPager) orderExpr(query *TodoGroupQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultTodoGroupOrder.Field {
+			b.Comma().Ident(DefaultTodoGroupOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to TodoGroup.
+func (_m *TodoGroupQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...TodoGroupPaginateOption,
+) (*TodoGroupConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newTodoGroupPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &TodoGroupConnection{Edges: []*TodoGroupEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// TodoGroupOrderFieldCreatedAt orders TodoGroup by created_at.
+	TodoGroupOrderFieldCreatedAt = &TodoGroupOrderField{
+		Value: func(_m *TodoGroup) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: todogroup.FieldCreatedAt,
+		toTerm: todogroup.ByCreatedAt,
+		toCursor: func(_m *TodoGroup) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// TodoGroupOrderFieldUpdatedAt orders TodoGroup by updated_at.
+	TodoGroupOrderFieldUpdatedAt = &TodoGroupOrderField{
+		Value: func(_m *TodoGroup) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: todogroup.FieldUpdatedAt,
+		toTerm: todogroup.ByUpdatedAt,
+		toCursor: func(_m *TodoGroup) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f TodoGroupOrderField) String() string {
+	var str string
+	switch f.column {
+	case TodoGroupOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case TodoGroupOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f TodoGroupOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *TodoGroupOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("TodoGroupOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *TodoGroupOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *TodoGroupOrderFieldUpdatedAt
+	default:
+		return fmt.Errorf("%s is not a valid TodoGroupOrderField", str)
+	}
+	return nil
+}
+
+// TodoGroupOrderField defines the ordering field of TodoGroup.
+type TodoGroupOrderField struct {
+	// Value extracts the ordering value from the given TodoGroup.
+	Value    func(*TodoGroup) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) todogroup.OrderOption
+	toCursor func(*TodoGroup) Cursor
+}
+
+// TodoGroupOrder defines the ordering of TodoGroup.
+type TodoGroupOrder struct {
+	Direction OrderDirection       `json:"direction"`
+	Field     *TodoGroupOrderField `json:"field"`
+}
+
+// DefaultTodoGroupOrder is the default ordering of TodoGroup.
+var DefaultTodoGroupOrder = &TodoGroupOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &TodoGroupOrderField{
+		Value: func(_m *TodoGroup) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: todogroup.FieldID,
+		toTerm: todogroup.ByID,
+		toCursor: func(_m *TodoGroup) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts TodoGroup into TodoGroupEdge.
+func (_m *TodoGroup) ToEdge(order *TodoGroupOrder) *TodoGroupEdge {
+	if order == nil {
+		order = DefaultTodoGroupOrder
+	}
+	return &TodoGroupEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// TodoToTodoGroupAssociationEdge is the edge representation of TodoToTodoGroupAssociation.
+type TodoToTodoGroupAssociationEdge struct {
+	Node   *TodoToTodoGroupAssociation `json:"node"`
+	Cursor Cursor                      `json:"cursor"`
+}
+
+// TodoToTodoGroupAssociationConnection is the connection containing edges to TodoToTodoGroupAssociation.
+type TodoToTodoGroupAssociationConnection struct {
+	Edges      []*TodoToTodoGroupAssociationEdge `json:"edges"`
+	PageInfo   PageInfo                          `json:"pageInfo"`
+	TotalCount int                               `json:"totalCount"`
+}
+
+func (c *TodoToTodoGroupAssociationConnection) build(nodes []*TodoToTodoGroupAssociation, pager *todototodogroupassociationPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *TodoToTodoGroupAssociation
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *TodoToTodoGroupAssociation {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *TodoToTodoGroupAssociation {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*TodoToTodoGroupAssociationEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &TodoToTodoGroupAssociationEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// TodoToTodoGroupAssociationPaginateOption enables pagination customization.
+type TodoToTodoGroupAssociationPaginateOption func(*todototodogroupassociationPager) error
+
+// WithTodoToTodoGroupAssociationOrder configures pagination ordering.
+func WithTodoToTodoGroupAssociationOrder(order *TodoToTodoGroupAssociationOrder) TodoToTodoGroupAssociationPaginateOption {
+	if order == nil {
+		order = DefaultTodoToTodoGroupAssociationOrder
+	}
+	o := *order
+	return func(pager *todototodogroupassociationPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultTodoToTodoGroupAssociationOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithTodoToTodoGroupAssociationFilter configures pagination filter.
+func WithTodoToTodoGroupAssociationFilter(filter func(*TodoToTodoGroupAssociationQuery) (*TodoToTodoGroupAssociationQuery, error)) TodoToTodoGroupAssociationPaginateOption {
+	return func(pager *todototodogroupassociationPager) error {
+		if filter == nil {
+			return errors.New("TodoToTodoGroupAssociationQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type todototodogroupassociationPager struct {
+	reverse bool
+	order   *TodoToTodoGroupAssociationOrder
+	filter  func(*TodoToTodoGroupAssociationQuery) (*TodoToTodoGroupAssociationQuery, error)
+}
+
+func newTodoToTodoGroupAssociationPager(opts []TodoToTodoGroupAssociationPaginateOption, reverse bool) (*todototodogroupassociationPager, error) {
+	pager := &todototodogroupassociationPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultTodoToTodoGroupAssociationOrder
+	}
+	return pager, nil
+}
+
+func (p *todototodogroupassociationPager) applyFilter(query *TodoToTodoGroupAssociationQuery) (*TodoToTodoGroupAssociationQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *todototodogroupassociationPager) toCursor(_m *TodoToTodoGroupAssociation) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *todototodogroupassociationPager) applyCursors(query *TodoToTodoGroupAssociationQuery, after, before *Cursor) (*TodoToTodoGroupAssociationQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultTodoToTodoGroupAssociationOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *todototodogroupassociationPager) applyOrder(query *TodoToTodoGroupAssociationQuery) *TodoToTodoGroupAssociationQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultTodoToTodoGroupAssociationOrder.Field {
+		query = query.Order(DefaultTodoToTodoGroupAssociationOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *todototodogroupassociationPager) orderExpr(query *TodoToTodoGroupAssociationQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultTodoToTodoGroupAssociationOrder.Field {
+			b.Comma().Ident(DefaultTodoToTodoGroupAssociationOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to TodoToTodoGroupAssociation.
+func (_m *TodoToTodoGroupAssociationQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...TodoToTodoGroupAssociationPaginateOption,
+) (*TodoToTodoGroupAssociationConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newTodoToTodoGroupAssociationPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &TodoToTodoGroupAssociationConnection{Edges: []*TodoToTodoGroupAssociationEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// TodoToTodoGroupAssociationOrderFieldCreatedAt orders TodoToTodoGroupAssociation by created_at.
+	TodoToTodoGroupAssociationOrderFieldCreatedAt = &TodoToTodoGroupAssociationOrderField{
+		Value: func(_m *TodoToTodoGroupAssociation) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: todototodogroupassociation.FieldCreatedAt,
+		toTerm: todototodogroupassociation.ByCreatedAt,
+		toCursor: func(_m *TodoToTodoGroupAssociation) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// TodoToTodoGroupAssociationOrderFieldUpdatedAt orders TodoToTodoGroupAssociation by updated_at.
+	TodoToTodoGroupAssociationOrderFieldUpdatedAt = &TodoToTodoGroupAssociationOrderField{
+		Value: func(_m *TodoToTodoGroupAssociation) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: todototodogroupassociation.FieldUpdatedAt,
+		toTerm: todototodogroupassociation.ByUpdatedAt,
+		toCursor: func(_m *TodoToTodoGroupAssociation) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f TodoToTodoGroupAssociationOrderField) String() string {
+	var str string
+	switch f.column {
+	case TodoToTodoGroupAssociationOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case TodoToTodoGroupAssociationOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f TodoToTodoGroupAssociationOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *TodoToTodoGroupAssociationOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("TodoToTodoGroupAssociationOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *TodoToTodoGroupAssociationOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *TodoToTodoGroupAssociationOrderFieldUpdatedAt
+	default:
+		return fmt.Errorf("%s is not a valid TodoToTodoGroupAssociationOrderField", str)
+	}
+	return nil
+}
+
+// TodoToTodoGroupAssociationOrderField defines the ordering field of TodoToTodoGroupAssociation.
+type TodoToTodoGroupAssociationOrderField struct {
+	// Value extracts the ordering value from the given TodoToTodoGroupAssociation.
+	Value    func(*TodoToTodoGroupAssociation) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) todototodogroupassociation.OrderOption
+	toCursor func(*TodoToTodoGroupAssociation) Cursor
+}
+
+// TodoToTodoGroupAssociationOrder defines the ordering of TodoToTodoGroupAssociation.
+type TodoToTodoGroupAssociationOrder struct {
+	Direction OrderDirection                        `json:"direction"`
+	Field     *TodoToTodoGroupAssociationOrderField `json:"field"`
+}
+
+// DefaultTodoToTodoGroupAssociationOrder is the default ordering of TodoToTodoGroupAssociation.
+var DefaultTodoToTodoGroupAssociationOrder = &TodoToTodoGroupAssociationOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &TodoToTodoGroupAssociationOrderField{
+		Value: func(_m *TodoToTodoGroupAssociation) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: todototodogroupassociation.FieldID,
+		toTerm: todototodogroupassociation.ByID,
+		toCursor: func(_m *TodoToTodoGroupAssociation) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts TodoToTodoGroupAssociation into TodoToTodoGroupAssociationEdge.
+func (_m *TodoToTodoGroupAssociation) ToEdge(order *TodoToTodoGroupAssociationOrder) *TodoToTodoGroupAssociationEdge {
+	if order == nil {
+		order = DefaultTodoToTodoGroupAssociationOrder
+	}
+	return &TodoToTodoGroupAssociationEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

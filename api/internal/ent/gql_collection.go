@@ -7,6 +7,8 @@ import (
 	"database/sql/driver"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 	"fmt"
 
@@ -171,6 +173,188 @@ func (_q *TodoQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			_q.WithNamedReminders(alias, func(wq *ReminderQuery) {
 				*wq = *query
 			})
+
+		case "groups":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoGroupClient{config: _q.config}).Query()
+			)
+			args := newTodoGroupPaginateArgs(fieldArgs(ctx, new(TodoGroupWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newTodoGroupPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Todo) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"todo_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							joinT := sql.Table(todo.GroupsTable)
+							s.Join(joinT).On(s.C(todogroup.FieldID), joinT.C(todo.GroupsPrimaryKey[0]))
+							s.Where(sql.InValues(joinT.C(todo.GroupsPrimaryKey[1]), ids...))
+							s.Select(joinT.C(todo.GroupsPrimaryKey[1]), sql.Count("*"))
+							s.GroupBy(joinT.C(todo.GroupsPrimaryKey[1]))
+						})
+						if err := query.Select().Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[2] == nil {
+								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[2][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Todo) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.Groups)
+							if nodes[i].Edges.totalCount[2] == nil {
+								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[2][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, todogroupImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(todo.GroupsPrimaryKey[1], limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedGroups(alias, func(wq *TodoGroupQuery) {
+				*wq = *query
+			})
+
+		case "groupedTodos":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoToTodoGroupAssociationClient{config: _q.config}).Query()
+			)
+			args := newTodoToTodoGroupAssociationPaginateArgs(fieldArgs(ctx, new(TodoToTodoGroupAssociationWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newTodoToTodoGroupAssociationPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Todo) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"todo_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(todo.GroupedTodosColumn), ids...))
+						})
+						if err := query.GroupBy(todo.GroupedTodosColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Todo) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.GroupedTodos)
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, todototodogroupassociationImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(todo.GroupedTodosColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedGroupedTodos(alias, func(wq *TodoToTodoGroupAssociationQuery) {
+				*wq = *query
+			})
 		case "text":
 			if _, ok := fieldSeen[todo.FieldText]; !ok {
 				selectedFields = append(selectedFields, todo.FieldText)
@@ -223,6 +407,426 @@ func newTodoPaginateArgs(rv map[string]any) *todoPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*TodoWhereInput); ok {
 		args.opts = append(args.opts, WithTodoFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *TodoGroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*TodoGroupQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *TodoGroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(todogroup.Columns))
+		selectedFields = []string{todogroup.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "todos":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoClient{config: _q.config}).Query()
+			)
+			args := newTodoPaginateArgs(fieldArgs(ctx, new(TodoWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newTodoPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*TodoGroup) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"todo_group_really_really_long_identifier"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							joinT := sql.Table(todogroup.TodosTable)
+							s.Join(joinT).On(s.C(todo.FieldID), joinT.C(todogroup.TodosPrimaryKey[1]))
+							s.Where(sql.InValues(joinT.C(todogroup.TodosPrimaryKey[0]), ids...))
+							s.Select(joinT.C(todogroup.TodosPrimaryKey[0]), sql.Count("*"))
+							s.GroupBy(joinT.C(todogroup.TodosPrimaryKey[0]))
+						})
+						if err := query.Select().Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[0] == nil {
+								nodes[i].Edges.totalCount[0] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[0][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*TodoGroup) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.Todos)
+							if nodes[i].Edges.totalCount[0] == nil {
+								nodes[i].Edges.totalCount[0] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[0][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, todoImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(todogroup.TodosPrimaryKey[0], limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedTodos(alias, func(wq *TodoQuery) {
+				*wq = *query
+			})
+
+		case "groupedTodos":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoToTodoGroupAssociationClient{config: _q.config}).Query()
+			)
+			args := newTodoToTodoGroupAssociationPaginateArgs(fieldArgs(ctx, new(TodoToTodoGroupAssociationWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newTodoToTodoGroupAssociationPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*TodoGroup) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"todo_group_really_really_long_identifier"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(todogroup.GroupedTodosColumn), ids...))
+						})
+						if err := query.GroupBy(todogroup.GroupedTodosColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*TodoGroup) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.GroupedTodos)
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, todototodogroupassociationImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(todogroup.GroupedTodosColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedGroupedTodos(alias, func(wq *TodoToTodoGroupAssociationQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[todogroup.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, todogroup.FieldCreatedAt)
+				fieldSeen[todogroup.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[todogroup.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, todogroup.FieldUpdatedAt)
+				fieldSeen[todogroup.FieldUpdatedAt] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[todogroup.FieldName]; !ok {
+				selectedFields = append(selectedFields, todogroup.FieldName)
+				fieldSeen[todogroup.FieldName] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type todogroupPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []TodoGroupPaginateOption
+}
+
+func newTodoGroupPaginateArgs(rv map[string]any) *todogroupPaginateArgs {
+	args := &todogroupPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &TodoGroupOrder{Field: &TodoGroupOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithTodoGroupOrder(order))
+			}
+		case *TodoGroupOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithTodoGroupOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*TodoGroupWhereInput); ok {
+		args.opts = append(args.opts, WithTodoGroupFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *TodoToTodoGroupAssociationQuery) CollectFields(ctx context.Context, satisfies ...string) (*TodoToTodoGroupAssociationQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *TodoToTodoGroupAssociationQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(todototodogroupassociation.Columns))
+		selectedFields = []string{todototodogroupassociation.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "todo":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, todoImplementors)...); err != nil {
+				return err
+			}
+			_q.withTodo = query
+			if _, ok := fieldSeen[todototodogroupassociation.FieldTodoID]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldTodoID)
+				fieldSeen[todototodogroupassociation.FieldTodoID] = struct{}{}
+			}
+
+		case "todoGroup":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoGroupClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, todogroupImplementors)...); err != nil {
+				return err
+			}
+			_q.withTodoGroup = query
+			if _, ok := fieldSeen[todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier)
+				fieldSeen[todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier] = struct{}{}
+			}
+		case "createdAt":
+			if _, ok := fieldSeen[todototodogroupassociation.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldCreatedAt)
+				fieldSeen[todototodogroupassociation.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[todototodogroupassociation.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldUpdatedAt)
+				fieldSeen[todototodogroupassociation.FieldUpdatedAt] = struct{}{}
+			}
+		case "todoID":
+			if _, ok := fieldSeen[todototodogroupassociation.FieldTodoID]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldTodoID)
+				fieldSeen[todototodogroupassociation.FieldTodoID] = struct{}{}
+			}
+		case "todoGroupReallyReallyLongIdentifier":
+			if _, ok := fieldSeen[todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier)
+				fieldSeen[todototodogroupassociation.FieldTodoGroupReallyReallyLongIdentifier] = struct{}{}
+			}
+		case "assigneeID":
+			if _, ok := fieldSeen[todototodogroupassociation.FieldAssigneeID]; !ok {
+				selectedFields = append(selectedFields, todototodogroupassociation.FieldAssigneeID)
+				fieldSeen[todototodogroupassociation.FieldAssigneeID] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type todototodogroupassociationPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []TodoToTodoGroupAssociationPaginateOption
+}
+
+func newTodoToTodoGroupAssociationPaginateArgs(rv map[string]any) *todototodogroupassociationPaginateArgs {
+	args := &todototodogroupassociationPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &TodoToTodoGroupAssociationOrder{Field: &TodoToTodoGroupAssociationOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithTodoToTodoGroupAssociationOrder(order))
+			}
+		case *TodoToTodoGroupAssociationOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithTodoToTodoGroupAssociationOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*TodoToTodoGroupAssociationWhereInput); ok {
+		args.opts = append(args.opts, WithTodoToTodoGroupAssociationFilter(v.Filter))
 	}
 	return args
 }

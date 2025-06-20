@@ -44,6 +44,18 @@ func (f TodoFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoMutation", m)
 }
 
+// The TodoGroupFunc type is an adapter to allow the use of ordinary
+// function as TodoGroup mutator.
+type TodoGroupFunc func(context.Context, *ent.TodoGroupMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TodoGroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TodoGroupMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoGroupMutation", m)
+}
+
 // The TodoReminderFunc type is an adapter to allow the use of ordinary
 // function as TodoReminder mutator.
 type TodoReminderFunc func(context.Context, *ent.TodoReminderMutation) (ent.Value, error)
@@ -54,6 +66,18 @@ func (f TodoReminderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoReminderMutation", m)
+}
+
+// The TodoToTodoGroupAssociationFunc type is an adapter to allow the use of ordinary
+// function as TodoToTodoGroupAssociation mutator.
+type TodoToTodoGroupAssociationFunc func(context.Context, *ent.TodoToTodoGroupAssociationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TodoToTodoGroupAssociationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TodoToTodoGroupAssociationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoToTodoGroupAssociationMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

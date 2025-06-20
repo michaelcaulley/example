@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"example/internal/ent/user"
 )
 
@@ -76,7 +78,7 @@ func (_m *Todo) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "Todo",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.Text); err != nil {
@@ -119,6 +121,154 @@ func (_m *Todo) Node(ctx context.Context) (node *Node, err error) {
 	}
 	err = _m.QueryReminders().
 		Select(reminder.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "TodoGroup",
+		Name: "groups",
+	}
+	err = _m.QueryGroups().
+		Select(todogroup.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "TodoToTodoGroupAssociation",
+		Name: "grouped_todos",
+	}
+	err = _m.QueryGroupedTodos().
+		Select(todototodogroupassociation.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *TodoGroup) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "TodoGroup",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Todo",
+		Name: "todos",
+	}
+	err = _m.QueryTodos().
+		Select(todo.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "TodoToTodoGroupAssociation",
+		Name: "grouped_todos",
+	}
+	err = _m.QueryGroupedTodos().
+		Select(todototodogroupassociation.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *TodoToTodoGroupAssociation) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "TodoToTodoGroupAssociation",
+		Fields: make([]*Field, 5),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.TodoID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "todo_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.TodoGroupReallyReallyLongIdentifier); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "todo_group_really_really_long_identifier",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.AssigneeID); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "int",
+		Name:  "assignee_id",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Todo",
+		Name: "todo",
+	}
+	err = _m.QueryTodo().
+		Select(todo.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "TodoGroup",
+		Name: "todo_group",
+	}
+	err = _m.QueryTodoGroup().
+		Select(todogroup.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err

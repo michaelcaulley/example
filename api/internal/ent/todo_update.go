@@ -8,6 +8,8 @@ import (
 	"example/internal/ent/predicate"
 	"example/internal/ent/reminder"
 	"example/internal/ent/todo"
+	"example/internal/ent/todogroup"
+	"example/internal/ent/todototodogroupassociation"
 	"fmt"
 	"time"
 
@@ -81,6 +83,36 @@ func (_u *TodoUpdate) AddReminders(v ...*Reminder) *TodoUpdate {
 	return _u.AddReminderIDs(ids...)
 }
 
+// AddGroupIDs adds the "groups" edge to the TodoGroup entity by IDs.
+func (_u *TodoUpdate) AddGroupIDs(ids ...int) *TodoUpdate {
+	_u.mutation.AddGroupIDs(ids...)
+	return _u
+}
+
+// AddGroups adds the "groups" edges to the TodoGroup entity.
+func (_u *TodoUpdate) AddGroups(v ...*TodoGroup) *TodoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroupIDs(ids...)
+}
+
+// AddGroupedTodoIDs adds the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by IDs.
+func (_u *TodoUpdate) AddGroupedTodoIDs(ids ...int) *TodoUpdate {
+	_u.mutation.AddGroupedTodoIDs(ids...)
+	return _u
+}
+
+// AddGroupedTodos adds the "grouped_todos" edges to the TodoToTodoGroupAssociation entity.
+func (_u *TodoUpdate) AddGroupedTodos(v ...*TodoToTodoGroupAssociation) *TodoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroupedTodoIDs(ids...)
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (_u *TodoUpdate) Mutation() *TodoMutation {
 	return _u.mutation
@@ -105,6 +137,48 @@ func (_u *TodoUpdate) RemoveReminders(v ...*Reminder) *TodoUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveReminderIDs(ids...)
+}
+
+// ClearGroups clears all "groups" edges to the TodoGroup entity.
+func (_u *TodoUpdate) ClearGroups() *TodoUpdate {
+	_u.mutation.ClearGroups()
+	return _u
+}
+
+// RemoveGroupIDs removes the "groups" edge to TodoGroup entities by IDs.
+func (_u *TodoUpdate) RemoveGroupIDs(ids ...int) *TodoUpdate {
+	_u.mutation.RemoveGroupIDs(ids...)
+	return _u
+}
+
+// RemoveGroups removes "groups" edges to TodoGroup entities.
+func (_u *TodoUpdate) RemoveGroups(v ...*TodoGroup) *TodoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroupIDs(ids...)
+}
+
+// ClearGroupedTodos clears all "grouped_todos" edges to the TodoToTodoGroupAssociation entity.
+func (_u *TodoUpdate) ClearGroupedTodos() *TodoUpdate {
+	_u.mutation.ClearGroupedTodos()
+	return _u
+}
+
+// RemoveGroupedTodoIDs removes the "grouped_todos" edge to TodoToTodoGroupAssociation entities by IDs.
+func (_u *TodoUpdate) RemoveGroupedTodoIDs(ids ...int) *TodoUpdate {
+	_u.mutation.RemoveGroupedTodoIDs(ids...)
+	return _u
+}
+
+// RemoveGroupedTodos removes "grouped_todos" edges to TodoToTodoGroupAssociation entities.
+func (_u *TodoUpdate) RemoveGroupedTodos(v ...*TodoToTodoGroupAssociation) *TodoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroupedTodoIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -222,6 +296,102 @@ func (_u *TodoUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !_u.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroupedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroupedTodosIDs(); len(nodes) > 0 && !_u.mutation.GroupedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupedTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.Node.Schema = _u.schemaConfig.Todo
 	ctx = internal.NewSchemaConfigContext(ctx, _u.schemaConfig)
 	_spec.AddModifiers(_u.modifiers...)
@@ -295,6 +465,36 @@ func (_u *TodoUpdateOne) AddReminders(v ...*Reminder) *TodoUpdateOne {
 	return _u.AddReminderIDs(ids...)
 }
 
+// AddGroupIDs adds the "groups" edge to the TodoGroup entity by IDs.
+func (_u *TodoUpdateOne) AddGroupIDs(ids ...int) *TodoUpdateOne {
+	_u.mutation.AddGroupIDs(ids...)
+	return _u
+}
+
+// AddGroups adds the "groups" edges to the TodoGroup entity.
+func (_u *TodoUpdateOne) AddGroups(v ...*TodoGroup) *TodoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroupIDs(ids...)
+}
+
+// AddGroupedTodoIDs adds the "grouped_todos" edge to the TodoToTodoGroupAssociation entity by IDs.
+func (_u *TodoUpdateOne) AddGroupedTodoIDs(ids ...int) *TodoUpdateOne {
+	_u.mutation.AddGroupedTodoIDs(ids...)
+	return _u
+}
+
+// AddGroupedTodos adds the "grouped_todos" edges to the TodoToTodoGroupAssociation entity.
+func (_u *TodoUpdateOne) AddGroupedTodos(v ...*TodoToTodoGroupAssociation) *TodoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroupedTodoIDs(ids...)
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (_u *TodoUpdateOne) Mutation() *TodoMutation {
 	return _u.mutation
@@ -319,6 +519,48 @@ func (_u *TodoUpdateOne) RemoveReminders(v ...*Reminder) *TodoUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveReminderIDs(ids...)
+}
+
+// ClearGroups clears all "groups" edges to the TodoGroup entity.
+func (_u *TodoUpdateOne) ClearGroups() *TodoUpdateOne {
+	_u.mutation.ClearGroups()
+	return _u
+}
+
+// RemoveGroupIDs removes the "groups" edge to TodoGroup entities by IDs.
+func (_u *TodoUpdateOne) RemoveGroupIDs(ids ...int) *TodoUpdateOne {
+	_u.mutation.RemoveGroupIDs(ids...)
+	return _u
+}
+
+// RemoveGroups removes "groups" edges to TodoGroup entities.
+func (_u *TodoUpdateOne) RemoveGroups(v ...*TodoGroup) *TodoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroupIDs(ids...)
+}
+
+// ClearGroupedTodos clears all "grouped_todos" edges to the TodoToTodoGroupAssociation entity.
+func (_u *TodoUpdateOne) ClearGroupedTodos() *TodoUpdateOne {
+	_u.mutation.ClearGroupedTodos()
+	return _u
+}
+
+// RemoveGroupedTodoIDs removes the "grouped_todos" edge to TodoToTodoGroupAssociation entities by IDs.
+func (_u *TodoUpdateOne) RemoveGroupedTodoIDs(ids ...int) *TodoUpdateOne {
+	_u.mutation.RemoveGroupedTodoIDs(ids...)
+	return _u
+}
+
+// RemoveGroupedTodos removes "grouped_todos" edges to TodoToTodoGroupAssociation entities.
+func (_u *TodoUpdateOne) RemoveGroupedTodos(v ...*TodoToTodoGroupAssociation) *TodoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroupedTodoIDs(ids...)
 }
 
 // Where appends a list predicates to the TodoUpdate builder.
@@ -461,6 +703,102 @@ func (_u *TodoUpdateOne) sqlSave(ctx context.Context) (_node *Todo, err error) {
 			},
 		}
 		edge.Schema = _u.schemaConfig.TodoReminder
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !_u.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   todo.GroupsTable,
+			Columns: todo.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todogroup.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroupedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroupedTodosIDs(); len(nodes) > 0 && !_u.mutation.GroupedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupedTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   todo.GroupedTodosTable,
+			Columns: []string{todo.GroupedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(todototodogroupassociation.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = _u.schemaConfig.TodoToTodoGroupAssociation
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}

@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 	"example/internal/ent"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 )
@@ -24,6 +25,16 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.TodoWhereInput) (*ent.TodoConnection, error) {
 	return r.client.Todo.Query().Paginate(ctx, after, first, before, last, ent.WithTodoFilter(where.Filter))
+}
+
+// TodoGroups is the resolver for the todoGroups field.
+func (r *queryResolver) TodoGroups(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.TodoGroupOrder, where *ent.TodoGroupWhereInput) (*ent.TodoGroupConnection, error) {
+	panic(fmt.Errorf("not implemented: TodoGroups - todoGroups"))
+}
+
+// TodoToTodoGroupAssociations is the resolver for the todoToTodoGroupAssociations field.
+func (r *queryResolver) TodoToTodoGroupAssociations(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.TodoToTodoGroupAssociationOrder, where *ent.TodoToTodoGroupAssociationWhereInput) (*ent.TodoToTodoGroupAssociationConnection, error) {
+	panic(fmt.Errorf("not implemented: TodoToTodoGroupAssociations - todoToTodoGroupAssociations"))
 }
 
 // Users is the resolver for the users field.

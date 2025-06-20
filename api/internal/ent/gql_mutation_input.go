@@ -6,6 +6,7 @@ package ent
 type CreateTodoInput struct {
 	Text        string
 	ReminderIDs []int
+	GroupIDs    []int
 }
 
 // Mutate applies the CreateTodoInput on the TodoMutation builder.
@@ -14,10 +15,53 @@ func (i *CreateTodoInput) Mutate(m *TodoMutation) {
 	if v := i.ReminderIDs; len(v) > 0 {
 		m.AddReminderIDs(v...)
 	}
+	if v := i.GroupIDs; len(v) > 0 {
+		m.AddGroupIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateTodoInput on the TodoCreate builder.
 func (c *TodoCreate) SetInput(i CreateTodoInput) *TodoCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateTodoGroupInput represents a mutation input for creating todogroups.
+type CreateTodoGroupInput struct {
+	Name    string
+	TodoIDs []int
+}
+
+// Mutate applies the CreateTodoGroupInput on the TodoGroupMutation builder.
+func (i *CreateTodoGroupInput) Mutate(m *TodoGroupMutation) {
+	m.SetName(i.Name)
+	if v := i.TodoIDs; len(v) > 0 {
+		m.AddTodoIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the CreateTodoGroupInput on the TodoGroupCreate builder.
+func (c *TodoGroupCreate) SetInput(i CreateTodoGroupInput) *TodoGroupCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateTodoToTodoGroupAssociationInput represents a mutation input for creating todototodogroupassociations.
+type CreateTodoToTodoGroupAssociationInput struct {
+	AssigneeID  int
+	TodoID      int
+	TodoGroupID int
+}
+
+// Mutate applies the CreateTodoToTodoGroupAssociationInput on the TodoToTodoGroupAssociationMutation builder.
+func (i *CreateTodoToTodoGroupAssociationInput) Mutate(m *TodoToTodoGroupAssociationMutation) {
+	m.SetAssigneeID(i.AssigneeID)
+	m.SetTodoID(i.TodoID)
+	m.SetTodoGroupID(i.TodoGroupID)
+}
+
+// SetInput applies the change-set in the CreateTodoToTodoGroupAssociationInput on the TodoToTodoGroupAssociationCreate builder.
+func (c *TodoToTodoGroupAssociationCreate) SetInput(i CreateTodoToTodoGroupAssociationInput) *TodoToTodoGroupAssociationCreate {
 	i.Mutate(c.Mutation())
 	return c
 }

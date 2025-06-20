@@ -22,8 +22,12 @@ const (
 	EdgeOwner = "owner"
 	// EdgeReminders holds the string denoting the reminders edge name in mutations.
 	EdgeReminders = "reminders"
+	// EdgeGroups holds the string denoting the groups edge name in mutations.
+	EdgeGroups = "groups"
 	// EdgeTodoReminders holds the string denoting the todo_reminders edge name in mutations.
 	EdgeTodoReminders = "todo_reminders"
+	// EdgeGroupedTodos holds the string denoting the grouped_todos edge name in mutations.
+	EdgeGroupedTodos = "grouped_todos"
 	// Table holds the table name of the todo in the database.
 	Table = "todos"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -38,6 +42,11 @@ const (
 	// RemindersInverseTable is the table name for the Reminder entity.
 	// It exists in this package in order to avoid circular dependency with the "reminder" package.
 	RemindersInverseTable = "reminders"
+	// GroupsTable is the table that holds the groups relation/edge. The primary key declared below.
+	GroupsTable = "todo_to_todo_group_associations"
+	// GroupsInverseTable is the table name for the TodoGroup entity.
+	// It exists in this package in order to avoid circular dependency with the "todogroup" package.
+	GroupsInverseTable = "todo_groups"
 	// TodoRemindersTable is the table that holds the todo_reminders relation/edge.
 	TodoRemindersTable = "todo_reminders"
 	// TodoRemindersInverseTable is the table name for the TodoReminder entity.
@@ -45,6 +54,13 @@ const (
 	TodoRemindersInverseTable = "todo_reminders"
 	// TodoRemindersColumn is the table column denoting the todo_reminders relation/edge.
 	TodoRemindersColumn = "todo_id"
+	// GroupedTodosTable is the table that holds the grouped_todos relation/edge.
+	GroupedTodosTable = "todo_to_todo_group_associations"
+	// GroupedTodosInverseTable is the table name for the TodoToTodoGroupAssociation entity.
+	// It exists in this package in order to avoid circular dependency with the "todototodogroupassociation" package.
+	GroupedTodosInverseTable = "todo_to_todo_group_associations"
+	// GroupedTodosColumn is the table column denoting the grouped_todos relation/edge.
+	GroupedTodosColumn = "todo_id"
 )
 
 // Columns holds all SQL columns for todo fields.
@@ -59,6 +75,9 @@ var (
 	// RemindersPrimaryKey and RemindersColumn2 are the table columns denoting the
 	// primary key for the reminders relation (M2M).
 	RemindersPrimaryKey = []string{"todo_id", "reminder_id"}
+	// GroupsPrimaryKey and GroupsColumn2 are the table columns denoting the
+	// primary key for the groups relation (M2M).
+	GroupsPrimaryKey = []string{"todo_group_really_really_long_identifier", "todo_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -120,6 +139,20 @@ func ByReminders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByGroupsCount orders the results by groups count.
+func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupsStep(), opts...)
+	}
+}
+
+// ByGroups orders the results by groups terms.
+func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByTodoRemindersCount orders the results by todo_reminders count.
 func ByTodoRemindersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -131,6 +164,20 @@ func ByTodoRemindersCount(opts ...sql.OrderTermOption) OrderOption {
 func ByTodoReminders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newTodoRemindersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupedTodosCount orders the results by grouped_todos count.
+func ByGroupedTodosCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupedTodosStep(), opts...)
+	}
+}
+
+// ByGroupedTodos orders the results by grouped_todos terms.
+func ByGroupedTodos(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupedTodosStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newOwnerStep() *sqlgraph.Step {
@@ -147,10 +194,24 @@ func newRemindersStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, false, RemindersTable, RemindersPrimaryKey...),
 	)
 }
+func newGroupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, GroupsTable, GroupsPrimaryKey...),
+	)
+}
 func newTodoRemindersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TodoRemindersInverseTable, TodoRemindersColumn),
 		sqlgraph.Edge(sqlgraph.O2M, true, TodoRemindersTable, TodoRemindersColumn),
+	)
+}
+func newGroupedTodosStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupedTodosInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, GroupedTodosTable, GroupedTodosColumn),
 	)
 }

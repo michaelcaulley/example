@@ -20,8 +20,12 @@ type Tx struct {
 	Reminder *ReminderClient
 	// Todo is the client for interacting with the Todo builders.
 	Todo *TodoClient
+	// TodoGroup is the client for interacting with the TodoGroup builders.
+	TodoGroup *TodoGroupClient
 	// TodoReminder is the client for interacting with the TodoReminder builders.
 	TodoReminder *TodoReminderClient
+	// TodoToTodoGroupAssociation is the client for interacting with the TodoToTodoGroupAssociation builders.
+	TodoToTodoGroupAssociation *TodoToTodoGroupAssociationClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -158,7 +162,9 @@ func (tx *Tx) init() {
 	tx.Moderator = NewModeratorClient(tx.config)
 	tx.Reminder = NewReminderClient(tx.config)
 	tx.Todo = NewTodoClient(tx.config)
+	tx.TodoGroup = NewTodoGroupClient(tx.config)
 	tx.TodoReminder = NewTodoReminderClient(tx.config)
+	tx.TodoToTodoGroupAssociation = NewTodoToTodoGroupAssociationClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 
